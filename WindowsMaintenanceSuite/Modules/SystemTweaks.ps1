@@ -226,12 +226,13 @@ function Get-TweaksStatus {
     # 4. Verificar Hibernacao
     Write-Host "`n[4/5] Hibernacao:" -ForegroundColor Yellow
     try {
-        $hiberStatus = powercfg /h | Select-String "hibernacao"
-        if ($hiberStatus -match "desativada" -or $hiberStatus -match "disabled") {
-            Write-Host "      [ATIVO] Hibernacao desativada." -ForegroundColor Green
+        # Verifica se o arquivo de hibernacao existe
+        $hiberFile = Test-Path "$env:SystemDrive\hiberfil.sys"
+        if (-not $hiberFile) {
+            Write-Host "      [ATIVO] Hibernacao desativada (arquivo hiberfil.sys nao encontrado)." -ForegroundColor Green
             $appliedCount++
         } else {
-            Write-Host "      [INATIVO] Hibernacao ativada." -ForegroundColor Red
+            Write-Host "      [INATIVO] Hibernacao ativada (arquivo hiberfil.sys encontrado)." -ForegroundColor Red
         }
     } catch {
         Write-Host "      [ERRO] Nao foi possivel verificar o status da hibernacao." -ForegroundColor Red
