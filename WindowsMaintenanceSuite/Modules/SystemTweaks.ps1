@@ -157,6 +157,130 @@ function Optimize-TCP {
     }
 }
 
+function Get-TweaksStatus {
+    Write-Host "`n========================================" -ForegroundColor Cyan
+    Write-Host "  STATUS DOS TWEAKS APLICADOS" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    
+    $appliedCount = 0
+    $totalTweaks = 5
+    
+    # 1. Verificar Plano de Energia
+    Write-Host "`n[1/5] Plano de Energia 'Desempenho Maximo':" -ForegroundColor Yellow
+    try {
+        $HighPerformanceGUID = "4d3a011a-356a-464a-874e-417127110166"
+        $schemeOutput = powercfg /getactivescheme
+        if ($schemeOutput -match '([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})') {
+            $currentPlan = $matches[1]
+            if ($currentPlan -eq $HighPerformanceGUID) {
+                Write-Host "      [ATIVO] Plano de Desempenho Maximo esta ativo." -ForegroundColor Green
+                $appliedCount++
+            } else {
+                Write-Host "      [INATIVO] Plano atual: $currentPlan" -ForegroundColor Red
+            }
+        } else {
+            Write-Host "      [ERRO] Nao foi possivel extrair GUID do plano atual." -ForegroundColor Red
+        }
+    } catch {
+        Write-Host "      [ERRO] Nao foi possivel verificar o plano de energia." -ForegroundColor Red
+    }
+    
+    # 2. Verificar Telemetria
+    Write-Host "`n[2/5] Telemetria Basica:" -ForegroundColor Yellow
+    try {
+        $keyPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection"
+        $valueName = "AllowTelemetry"
+        if (Test-Path $keyPath) {
+            $telemetryValue = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+            if ($telemetryValue -eq 0) {
+                Write-Host "      [ATIVO] Telemetria Basica desativada (AllowTelemetry = 0)." -ForegroundColor Green
+                $appliedCount++
+            } else {
+                Write-Host "      [INATIVO] Telemetria Basica ativada (AllowTelemetry = $telemetryValue)." -ForegroundColor Red
+            }
+        } else {
+            Write-Host "      [INATIVO] Chave de registro nao encontrada (telemetria padrao)." -ForegroundColor Red
+        }
+    } catch {
+        Write-Host "      [ERRO] Nao foi possivel verificar a telemetria." -ForegroundColor Red
+    }
+    
+    # 3. Verificar Menu Iniciar
+    Write-Host "`n[3/5] Velocidade do Menu Iniciar:" -ForegroundColor Yellow
+    try {
+        $keyPath = "HKCU:\Control Panel\Desktop"
+        $valueName = "MenuShowDelay"
+        $menuDelay = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+        if ($menuDelay -eq 100) {
+            Write-Host "      [ATIVO] Menu Iniciar acelerado (MenuShowDelay = 100ms)." -ForegroundColor Green
+            $appliedCount++
+        } elseif ($menuDelay -eq 400) {
+            Write-Host "      [INATIVO] Menu Iniciar com velocidade padrao (MenuShowDelay = 400ms)." -ForegroundColor Red
+        } else {
+            Write-Host "      [PERSONALIZADO] Menu Iniciar com delay customizado (MenuShowDelay = ${menuDelay}ms)." -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "      [ERRO] Nao foi possivel verificar a velocidade do Menu Iniciar." -ForegroundColor Red
+    }
+    
+    # 4. Verificar Hibernacao
+    Write-Host "`n[4/5] Hibernacao:" -ForegroundColor Yellow
+    try {
+        $hiberStatus = powercfg /h | Select-String "hibernacao"
+        if ($hiberStatus -match "desativada" -or $hiberStatus -match "disabled") {
+            Write-Host "      [ATIVO] Hibernacao desativada." -ForegroundColor Green
+            $appliedCount++
+        } else {
+            Write-Host "      [INATIVO] Hibernacao ativada." -ForegroundColor Red
+        }
+    } catch {
+        Write-Host "      [ERRO] Nao foi possivel verificar o status da hibernacao." -ForegroundColor Red
+    }
+    
+    # 5. Verificar TCP
+    Write-Host "`n[5/5] Otimizacoes TCP:" -ForegroundColor Yellow
+    try {
+        $keyPath = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"
+        $interfaces = Get-ChildItem -Path $keyPath
+        $optimizedCount = 0
+        $totalInterfaces = $interfaces.Count
+        
+        foreach ($interface in $interfaces) {
+            $interfaceKey = $interface.PSPath
+            $tcpNoDelay = (Get-ItemProperty -Path $interfaceKey -Name "TcpNoDelay" -ErrorAction SilentlyContinue).TcpNoDelay
+            $tcpAckFrequency = (Get-ItemProperty -Path $interfaceKey -Name "TcpAckFrequency" -ErrorAction SilentlyContinue).TcpAckFrequency
+            
+            if ($tcpNoDelay -eq 1 -and $tcpAckFrequency -eq 1) {
+                $optimizedCount++
+            }
+        }
+        
+        if ($optimizedCount -gt 0) {
+            Write-Host "      [ATIVO] Otimizacoes TCP aplicadas em $optimizedCount de $totalInterfaces interface(s)." -ForegroundColor Green
+            $appliedCount++
+        } else {
+            Write-Host "      [INATIVO] Nenhuma otimizacao TCP aplicada." -ForegroundColor Red
+        }
+    } catch {
+        Write-Host "      [ERRO] Nao foi possivel verificar as otimizacoes TCP." -ForegroundColor Red
+    }
+    
+    # Resumo
+    Write-Host "`n========================================" -ForegroundColor Cyan
+    Write-Host "  RESUMO: $appliedCount de $totalTweaks tweaks aplicados" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    
+    if ($appliedCount -eq $totalTweaks) {
+        Write-Host "Todos os tweaks estao aplicados!" -ForegroundColor Green
+    } elseif ($appliedCount -eq 0) {
+        Write-Host "Nenhum tweak aplicado." -ForegroundColor Red
+    } else {
+        Write-Host "$appliedCount tweak(s) aplicado(s). Use a opcao 6 para aplicar todos." -ForegroundColor Yellow
+    }
+    
+    Write-Log "Status dos tweaks verificado: $appliedCount/$totalTweaks aplicados" "INFO"
+}
+
 function Invoke-SystemTweaks {
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "  AJUSTES DE SISTEMA (TWEAKS)" -ForegroundColor Cyan
@@ -168,7 +292,8 @@ function Invoke-SystemTweaks {
     Write-Host "  4. Desativar Hibernacao (Libera espaco em disco)"
     Write-Host "  5. Otimizar TCP (Desativar Nagle's Algorithm)"
     Write-Host "  6. Aplicar TODOS os ajustes acima"
-    Write-Host "  7. Voltar ao Menu Principal"
+    Write-Host "  7. Verificar status dos tweaks aplicados"
+    Write-Host "  8. Voltar ao Menu Principal"
     Write-Host "`n========================================" -ForegroundColor Cyan
 
     $choice = Read-Host "Digite o numero da sua escolha"
@@ -212,7 +337,12 @@ function Invoke-SystemTweaks {
             Write-Host "  TODOS OS AJUSTES APLICADOS!" -ForegroundColor Green
             Write-Host "========================================" -ForegroundColor Green
         }
-        "7" { return }
+        "7" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Get-TweaksStatus
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "8" { return }
         default {
             Write-Host "Opcao invalida. Por favor, tente novamente." -ForegroundColor Red
             Start-Sleep -Seconds 2
