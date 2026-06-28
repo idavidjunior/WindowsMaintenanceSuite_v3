@@ -30,31 +30,34 @@ function Backup-RegistryKey {
     }
 }
 
-# 1. Tweak: Ativar Plano de Energia "Desempenho Máximo"
+# 1. Tweak: Ativar Plano de Energia "Desempenho Maximo"
 function Set-HighPerformancePowerPlan {
-    Write-Host "Aplicando Tweak: Ativar Plano de Energia 'Desempenho Máximo'..." -ForegroundColor Cyan
+    Write-Host "`n[1/5] Ativando Plano de Energia 'Desempenho Maximo'..." -ForegroundColor Yellow
     try {
-        # GUID para Desempenho Máximo (pode estar oculto)
+        # GUID para Desempenho Maximo (pode estar oculto)
         $HighPerformanceGUID = "4d3a011a-356a-464a-874e-417127110166"
         
-        # Verifica se o plano já existe ou se precisa ser importado/ativado
+        # Verifica se o plano ja existe ou se precisa ser importado/ativado
         $currentPlan = (powercfg /getactivescheme).Split(" ")[3]
         if ($currentPlan -ne $HighPerformanceGUID) {
             # Tenta ativar o plano
             powercfg /setactive $HighPerformanceGUID | Out-Null
-            Write-Host "Plano de energia 'Desempenho Máximo' ativado." -ForegroundColor Green
+            Write-Host "      [OK] Plano de energia 'Desempenho Maximo' ativado com sucesso." -ForegroundColor Green
+            Write-Log "Plano de energia 'Desempenho Maximo' ativado." "SUCCESS"
         } else {
-            Write-Host "Plano de energia 'Desempenho Máximo' já está ativo." -ForegroundColor Yellow
+            Write-Host "      [INFO] Plano de energia 'Desempenho Maximo' ja estava ativo." -ForegroundColor Cyan
+            Write-Log "Plano de energia 'Desempenho Maximo' ja estava ativo." "INFO"
         }
     }
     catch {
-        Write-Host "Erro ao ativar plano de energia: $_" -ForegroundColor Red
+        Write-Host "      [ERRO] Erro ao ativar plano de energia: $_" -ForegroundColor Red
+        Write-Log "Erro ao ativar plano de energia: $_" "ERROR"
     }
 }
 
-# 2. Tweak: Desativar Telemetria Básica
+# 2. Tweak: Desativar Telemetria Basica
 function Disable-BasicTelemetry {
-    Write-Host "Aplicando Tweak: Desativar Telemetria Básica..." -ForegroundColor Cyan
+    Write-Host "`n[2/5] Desativando Telemetria Basica..." -ForegroundColor Yellow
     $keyPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection"
     $valueName = "AllowTelemetry"
     $originalValue = $null
@@ -68,16 +71,19 @@ function Disable-BasicTelemetry {
         }
         
         Set-ItemProperty -Path $keyPath -Name $valueName -Value 0 -Force
-        Write-Host "Telemetria Básica desativada (AllowTelemetry = 0). Valor original: $($originalValue -replace '^$', 'Não Existia')" -ForegroundColor Green
+        $originalDisplay = if ($null -eq $originalValue) { "Nao existia" } else { $originalValue }
+        Write-Host "      [OK] Telemetria Basica desativada (AllowTelemetry = 0). Valor original: $originalDisplay" -ForegroundColor Green
+        Write-Log "Telemetria Basica desativada." "SUCCESS"
     }
     catch {
-        Write-Host "Erro ao desativar telemetria básica: $_" -ForegroundColor Red
+        Write-Host "      [ERRO] Erro ao desativar telemetria basica: $_" -ForegroundColor Red
+        Write-Log "Erro ao desativar telemetria basica: $_" "ERROR"
     }
 }
 
 # 3. Tweak: Acelerar Resposta do Menu Iniciar
 function Set-StartMenuSpeed {
-    Write-Host "Aplicando Tweak: Acelerar Resposta do Menu Iniciar..." -ForegroundColor Cyan
+    Write-Host "`n[3/5] Acelerando Resposta do Menu Iniciar..." -ForegroundColor Yellow
     $keyPath = "HKCU:\Control Panel\Desktop"
     $valueName = "MenuShowDelay"
     $originalValue = $null
@@ -87,35 +93,43 @@ function Set-StartMenuSpeed {
             $originalValue = (Get-ItemProperty -Path $keyPath -Name $valueName).$valueName
         }
         
-        Set-ItemProperty -Path $keyPath -Name $valueName -Value 100 -Force # Valor padrão é 400
-        Write-Host "Atraso do Menu Iniciar ajustado para 100ms. Valor original: $($originalValue -replace '^$', 'Não Existia')" -ForegroundColor Green
+        Set-ItemProperty -Path $keyPath -Name $valueName -Value 100 -Force # Valor padrao e 400
+        $originalDisplay = if ($null -eq $originalValue) { "Nao existia" } else { "$originalValue ms" }
+        Write-Host "      [OK] Atraso do Menu Iniciar ajustado para 100ms. Valor original: $originalDisplay" -ForegroundColor Green
+        Write-Log "Menu Iniciar acelerado (100ms)." "SUCCESS"
     }
     catch {
-        Write-Host "Erro ao acelerar Menu Iniciar: $_" -ForegroundColor Red
+        Write-Host "      [ERRO] Erro ao acelerar Menu Iniciar: $_" -ForegroundColor Red
+        Write-Log "Erro ao acelerar Menu Iniciar: $_" "ERROR"
     }
 }
 
-# 4. Tweak: Otimizar Hibernação (Desativar)
+# 4. Tweak: Otimizar Hibernacao (Desativar)
 function Disable-Hibernation {
-    Write-Host "Aplicando Tweak: Desativar Hibernação (libera espaço em disco)..." -ForegroundColor Cyan
+    Write-Host "`n[4/5] Desativando Hibernacao (libera espaco em disco)..." -ForegroundColor Yellow
     try {
         powercfg /h off | Out-Null
-        Write-Host "Hibernação desativada. Para reativar: powercfg /h on" -ForegroundColor Green
+        Write-Host "      [OK] Hibernacao desativada com sucesso. Para reativar: powercfg /h on" -ForegroundColor Green
+        Write-Log "Hibernacao desativada." "SUCCESS"
     }
     catch {
-        Write-Host "Erro ao desativar hibernação: $_" -ForegroundColor Red
+        Write-Host "      [ERRO] Erro ao desativar hibernacao: $_" -ForegroundColor Red
+        Write-Log "Erro ao desativar hibernacao: $_" "ERROR"
     }
 }
 
 # 5. Tweak: Ajustes de TCP (Netsh) - Desativar Nagle's Algorithm
 function Optimize-TCP {
-    Write-Host "Aplicando Tweak: Otimizar TCP (Desativar Nagle's Algorithm)..." -ForegroundColor Cyan
+    Write-Host "`n[5/5] Otimizando TCP (Desativar Nagle's Algorithm)..." -ForegroundColor Yellow
     $keyPath = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"
     
     try {
         # Iterar sobre todas as interfaces de rede
-        Get-ChildItem -Path $keyPath | ForEach-Object {
-            $interfaceKey = $_.PSPath
+        $interfaces = Get-ChildItem -Path $keyPath
+        $optimizedCount = 0
+        
+        foreach ($interface in $interfaces) {
+            $interfaceKey = $interface.PSPath
             $originalTcpNoDelay = $null
             $originalTcpAckFrequency = $null
 
@@ -128,47 +142,79 @@ function Optimize-TCP {
 
             Set-ItemProperty -Path $interfaceKey -Name "TcpNoDelay" -Value 1 -Force -ErrorAction SilentlyContinue
             Set-ItemProperty -Path $interfaceKey -Name "TcpAckFrequency" -Value 1 -Force -ErrorAction SilentlyContinue
-            Write-Host "  - Interface $($_.Name): TcpNoDelay=1 (Original: $($originalTcpNoDelay -replace '^$', 'Não Existia')), TcpAckFrequency=1 (Original: $($originalTcpAckFrequency -replace '^$', 'Não Existia'))" -ForegroundColor DarkGreen
+            $optimizedCount++
+            
+            $originalNoDelayDisplay = if ($null -eq $originalTcpNoDelay) { "Nao existia" } else { $originalTcpNoDelay }
+            $originalAckDisplay = if ($null -eq $originalTcpAckFrequency) { "Nao existia" } else { $originalTcpAckFrequency }
+            Write-Host "      [OK] Interface $($interface.Name): TcpNoDelay=1 (Original: $originalNoDelayDisplay), TcpAckFrequency=1 (Original: $originalAckDisplay)" -ForegroundColor Green
         }
-        Write-Host "Ajustes de TCP aplicados. Pode ser necessário reiniciar para efeito total." -ForegroundColor Green
+        Write-Host "      [OK] Ajustes de TCP aplicados em $optimizedCount interface(s). Pode ser necessario reiniciar para efeito total." -ForegroundColor Green
+        Write-Log "Ajustes de TCP aplicados em $optimizedCount interface(s)." "SUCCESS"
     }
     catch {
-        Write-Host "Erro ao otimizar TCP: $_" -ForegroundColor Red
+        Write-Host "      [ERRO] Erro ao otimizar TCP: $_" -ForegroundColor Red
+        Write-Log "Erro ao otimizar TCP: $_" "ERROR"
     }
 }
 
 function Invoke-SystemTweaks {
-    Write-Host "`n=========================================" -ForegroundColor Yellow
-    Write-Host "  Windows Maintenance Suite - Ajustes de Sistema " -ForegroundColor Yellow
-    Write-Host "=========================================" -ForegroundColor Yellow
+    Write-Host "`n========================================" -ForegroundColor Cyan
+    Write-Host "  AJUSTES DE SISTEMA (TWEAKS)" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "`nSelecione os ajustes que deseja aplicar:"
-    Write-Host "  1. Ativar Plano de Energia 'Desempenho Máximo'"
-    Write-Host "  2. Desativar Telemetria Básica"
+    Write-Host "  1. Ativar Plano de Energia 'Desempenho Maximo'"
+    Write-Host "  2. Desativar Telemetria Basica"
     Write-Host "  3. Acelerar Resposta do Menu Iniciar"
-    Write-Host "  4. Desativar Hibernação (Libera espaço em disco)"
+    Write-Host "  4. Desativar Hibernacao (Libera espaco em disco)"
     Write-Host "  5. Otimizar TCP (Desativar Nagle's Algorithm)"
     Write-Host "  6. Aplicar TODOS os ajustes acima"
     Write-Host "  7. Voltar ao Menu Principal"
-    Write-Host "`n=========================================" -ForegroundColor Yellow
+    Write-Host "`n========================================" -ForegroundColor Cyan
 
-    $choice = Read-Host "Digite o número da sua escolha"
+    $choice = Read-Host "Digite o numero da sua escolha"
 
     switch ($choice) {
-        "1" { Set-HighPerformancePowerPlan }
-        "2" { Disable-BasicTelemetry }
-        "3" { Set-StartMenuSpeed }
-        "4" { Disable-Hibernation }
-        "5" { Optimize-TCP }
+        "1" { 
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Set-HighPerformancePowerPlan 
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "2" { 
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-BasicTelemetry 
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "3" { 
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Set-StartMenuSpeed 
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "4" { 
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-Hibernation 
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "5" { 
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Optimize-TCP 
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
         "6" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Write-Host "  APLICANDO TODOS OS AJUSTES" -ForegroundColor Cyan
+            Write-Host "========================================" -ForegroundColor Cyan
             Set-HighPerformancePowerPlan
             Disable-BasicTelemetry
             Set-StartMenuSpeed
             Disable-Hibernation
             Optimize-TCP
+            Write-Host "`n========================================" -ForegroundColor Green
+            Write-Host "  TODOS OS AJUSTES APLICADOS!" -ForegroundColor Green
+            Write-Host "========================================" -ForegroundColor Green
         }
         "7" { return }
         default {
-            Write-Host "Opção inválida. Por favor, tente novamente." -ForegroundColor Red
+            Write-Host "Opcao invalida. Por favor, tente novamente." -ForegroundColor Red
             Start-Sleep -Seconds 2
         }
     }

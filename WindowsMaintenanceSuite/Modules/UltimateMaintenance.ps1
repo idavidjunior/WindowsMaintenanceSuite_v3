@@ -1,50 +1,76 @@
 function Invoke-UltimateMaintenance {
-    Write-Log "Iniciando Manutenção Completa (Ultimate)..." "INFO"
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  MANUTENCAO COMPLETA (ULTIMATE)" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Log "Iniciando Manutencao Completa (Ultimate)..." "INFO"
     
-    # Criar Ponto de Restauração (Segurança)
-    Write-Log "Criando Ponto de Restauração do Sistema..." "INFO"
+    # Criar Ponto de Restauracao (Seguranca)
+    Write-Host "`n[0/4] Criando Ponto de Restauracao do Sistema..." -ForegroundColor Yellow
+    Write-Log "Criando Ponto de Restauracao do Sistema..." "INFO"
     try {
         Checkpoint-Computer -Description "WMS_Ultimate_Maintenance" -RestorePointType "MODIFY_SETTINGS" -ErrorAction Stop
-        Write-Log "Ponto de restauração criado com sucesso." "SUCCESS"
+        Write-Host "      [OK] Ponto de restauracao criado com sucesso." -ForegroundColor Green
+        Write-Log "Ponto de restauracao criado com sucesso." "SUCCESS"
     } catch {
-        Write-Log "Falha ao criar ponto de restauração. O serviço pode estar desativado." "WARNING"
+        Write-Host "      [AVISO] Falha ao criar ponto de restauracao O servico pode estar desativado." -ForegroundColor Yellow
+        Write-Log "Falha ao criar ponto de restauracao. O servico pode estar desativado." "WARNING"
     }
     
     # Executa a Essencial primeiro
+    Write-Host "`n[1/4] Executando Manutencao Essencial..." -ForegroundColor Yellow
     Invoke-EssentialMaintenance
     
     # 1. Defender Quick Scan
-    Write-Log "Iniciando Verificação Rápida do Windows Defender..." "INFO"
+    Write-Host "`n[2/4] Iniciando Verificacao Rapida do Windows Defender..." -ForegroundColor Yellow
+    Write-Log "Iniciando Verificacao Rapida do Windows Defender..." "INFO"
     try {
         Start-MpScan -ScanType QuickScan -ErrorAction Stop
-        Write-Log "Verificação Rápida do Windows Defender concluída." "SUCCESS"
+        Write-Host "      [OK] Verificacao Rapida do Windows Defender concluida." -ForegroundColor Green
+        Write-Log "Verificacao Rapida do Windows Defender concluida." "SUCCESS"
     } catch {
-        Write-Log "Falha ao executar Verificação Rápida do Windows Defender." "ERROR"
+        Write-Host "      [ERRO] Falha ao executar Verificacao Rapida do Windows Defender." -ForegroundColor Red
+        Write-Log "Falha ao executar Verificacao Rapida do Windows Defender." "ERROR"
     }
     
     # 2. Limpeza da Loja de Componentes (DISM)
+    Write-Host "`n[3/4] Limpando Loja de Componentes (DISM StartComponentCleanup)..." -ForegroundColor Yellow
     Write-Log "Limpando Loja de Componentes (DISM StartComponentCleanup)..." "INFO"
     try {
-        DISM /Online /Cleanup-Image /StartComponentCleanup -ErrorAction Stop
-        Write-Log "Limpeza da Loja de Componentes concluída." "SUCCESS"
+        $dismProcess = Start-Process -FilePath "dism.exe" -ArgumentList "/Online /Cleanup-Image /StartComponentCleanup" -Wait -PassThru -NoNewWindow
+        if ($dismProcess.ExitCode -eq 0) {
+            Write-Host "      [OK] Limpeza da Loja de Componentes concluida." -ForegroundColor Green
+            Write-Log "Limpeza da Loja de Componentes concluida." "SUCCESS"
+        } else {
+            Write-Host "      [ERRO] Falha ao limpar a Loja de Componentes." -ForegroundColor Red
+            Write-Log "Falha ao limpar a Loja de Componentes." "ERROR"
+        }
     } catch {
+        Write-Host "      [ERRO] Falha ao limpar a Loja de Componentes." -ForegroundColor Red
         Write-Log "Falha ao limpar a Loja de Componentes." "ERROR"
     }
     
-    # 3. Limpeza de Logs de Eventos (Opcional - mas solicitado na spec)
+    # 3. Limpeza de Logs de Eventos
+    Write-Host "`n[4/4] Limpando Logs de Eventos do Windows..." -ForegroundColor Yellow
     Write-Log "Limpando Logs de Eventos do Windows..." "INFO"
     $Logs = Get-WinEvent -ListLog *
+    $cleanedLogs = 0
     foreach ($log in $Logs) {
         try {
             [System.Diagnostics.Eventing.Reader.EventLogSession]::GlobalSession.ClearLog($log.LogName)
-            Write-Log "Log $($log.LogName) limpo." "INFO"
+            $cleanedLogs++
         } catch {
-            Write-Log "Falha ao limpar o log $($log.LogName)." "WARNING"
+            # Logs em uso ou protegidos podem falhar, e normal
         }
     }
+    Write-Host "      [OK] $cleanedLogs logs de eventos limpos." -ForegroundColor Green
+    Write-Log "$cleanedLogs logs de eventos limpos." "SUCCESS"
     
-    # Atualiza Histórico
+    # Atualiza Historico
     Update-WMSHistory -Key "LastUltimate" -Value (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-    Write-Log "Manutenção Completa concluída com sucesso!" "SUCCESS"
+    
+    Write-Host "`n========================================" -ForegroundColor Green
+    Write-Host "  MANUTENCAO COMPLETA CONCLUIDA!" -ForegroundColor Green
+    Write-Host "========================================" -ForegroundColor Green
+    Write-Log "Manutencao Completa concluida com sucesso!" "SUCCESS"
 }
 

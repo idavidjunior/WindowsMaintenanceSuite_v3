@@ -22,40 +22,41 @@
 function Show-MainMenu {
     while ($true) {
         Clear-Host
-        Write-Host "=========================================" -ForegroundColor Green
-        Write-Host "  Windows Maintenance Suite - Menu Principal " -ForegroundColor Green
-        Write-Host "=========================================" -ForegroundColor Green
-        Write-Host "`nSelecione uma opção:"
-        Write-Host "  1. Manutenção Essencial"
-        Write-Host "  2. Manutenção Completa"
-        Write-Host "  3. Diagnósticos Aprofundados"
-        Write-Host "  4. Diagnósticos Inteligentes (SMART)"
+        Write-Host "========================================" -ForegroundColor Green
+        Write-Host "  WINDOWS MAINTENANCE SUITE" -ForegroundColor Green
+        Write-Host "  MENU PRINCIPAL" -ForegroundColor Green
+        Write-Host "========================================" -ForegroundColor Green
+        Write-Host "`nSelecione uma opcao:"
+        Write-Host "  1. Manutencao Essencial"
+        Write-Host "  2. Manutencao Completa"
+        Write-Host "  3. Diagnosticos Aprofundados"
+        Write-Host "  4. Diagnosticos Inteligentes (SMART)"
         Write-Host "  5. Backup do Registro"
         Write-Host "  6. Restaurar Registro (CUIDADO!)"
         Write-Host "  7. Ajustes de Sistema (Tweaks)"
         Write-Host "  8. Sair"
-        Write-Host "`n=========================================" -ForegroundColor Green
+        Write-Host "`n========================================" -ForegroundColor Green
 
-        $choice = Read-Host "Digite o número da sua escolha"
+        $choice = Read-Host "Digite o numero da sua escolha"
 
         switch ($choice) {
             "1" {
-                Write-Log "Iniciando Manutenção Essencial."
+                Write-Log "Iniciando Manutencao Essencial."
                 Invoke-EssentialMaintenance
                 Wait-KeyPress
             }
             "2" {
-                Write-Log "Iniciando Manutenção Completa."
+                Write-Log "Iniciando Manutencao Completa."
                 Invoke-UltimateMaintenance
                 Wait-KeyPress
             }
             "3" {
-                Write-Log "Iniciando Diagnósticos Aprofundados."
+                Write-Log "Iniciando Diagnosticos Aprofundados."
                 Invoke-DeepDiagnostics
                 Wait-KeyPress
             }
             "4" {
-                Write-Log "Iniciando Diagnósticos Inteligentes (SMART)."
+                Write-Log "Iniciando Diagnosticos Inteligentes (SMART)."
                 Invoke-SmartDiagnostics
                 Wait-KeyPress
             }
@@ -65,18 +66,19 @@ function Show-MainMenu {
                 Wait-KeyPress
             }
             "6" {
-                Write-Log "Iniciando Restauração do Registro."
+                Write-Log "Iniciando Restauracao do Registro."
                 $backupFiles = Get-ChildItem -Path "C:\WMS_RegistryBackups" -Filter "RegistryBackup_*.reg" | Select-Object -ExpandProperty FullName
                 if ($backupFiles.Count -gt 0) {
-                    Write-Host "`nBackups de Registro disponíveis:" -ForegroundColor Yellow
+                    Write-Host "`nBackups de Registro disponiveis:" -ForegroundColor Yellow
                     for ($i = 0; $i -lt $backupFiles.Count; $i++) {
-                        Write-Host "  $($i+1). $($backupFiles[$i])"
+                        $backupSize = [Math]::Round((Get-Item $backupFiles[$i]).Length / 1MB, 2)
+                        Write-Host "  $($i+1). $($backupFiles[$i]) ($backupSize MB)"
                     }
-                    $backupChoice = Read-Host "Selecione o número do backup para restaurar"
+                    $backupChoice = Read-Host "Selecione o numero do backup para restaurar"
                     if ($backupChoice -match "^\d+$" -and $backupChoice -ge 1 -and $backupChoice -le $backupFiles.Count) {
                         Restore-Registry -BackupFile $backupFiles[$backupChoice-1]
                     } else {
-                        Write-Host "Escolha inválida." -ForegroundColor Red
+                        Write-Host "Escolha invalida." -ForegroundColor Red
                     }
                 } else {
                     Write-Host "Nenhum backup de registro encontrado em C:\WMS_RegistryBackups." -ForegroundColor Yellow
@@ -93,7 +95,7 @@ function Show-MainMenu {
                 return
             }
             default {
-                Write-Host "Opção inválida. Por favor, tente novamente." -ForegroundColor Red
+                Write-Host "Opcao invalida. Por favor, tente novamente." -ForegroundColor Red
                 Start-Sleep -Seconds 2
             }
         }
