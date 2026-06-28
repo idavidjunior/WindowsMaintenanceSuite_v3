@@ -26,4 +26,3 @@ function Write-Log {
     }
 }
 
-Export-ModuleMember -Function Write-Log

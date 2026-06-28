@@ -1,4 +1,4 @@
-function Start-UltimateMaintenance {
+function Invoke-UltimateMaintenance {
     Write-Log "Iniciando Manutenção Completa (Ultimate)..." "INFO"
     
     # Criar Ponto de Restauração (Segurança)
@@ -11,7 +11,7 @@ function Start-UltimateMaintenance {
     }
     
     # Executa a Essencial primeiro
-    Start-EssentialMaintenance
+    Invoke-EssentialMaintenance
     
     # 1. Defender Quick Scan
     Write-Log "Iniciando Verificação Rápida do Windows Defender..." "INFO"
@@ -48,4 +48,3 @@ function Start-UltimateMaintenance {
     Write-Log "Manutenção Completa concluída com sucesso!" "SUCCESS"
 }
 
-Export-ModuleMember -Function Start-UltimateMaintenance

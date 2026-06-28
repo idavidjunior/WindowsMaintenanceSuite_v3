@@ -21,9 +21,23 @@ function Backup-Registry {
     $BackupFile = Join-Path -Path $BackupPath -ChildPath "RegistryBackup_$Timestamp.reg"
 
     try {
-        # Exporta todo o registro. Requer privilégios de administrador.
-        Start-Process -FilePath "reg.exe" -ArgumentList "export HKLM `"$BackupFile`" /y" -Wait -NoNewWindow
-        Write-Host "Backup do Registro concluído com sucesso em: $BackupFile" -ForegroundColor Green
+        # Exporta HKLM e HKCU para backup completo. Requer privilégios de administrador.
+        $BackupFileHKLM = $BackupFile -replace '\.reg$', '_HKLM.reg'
+        $BackupFileHKCU = $BackupFile -replace '\.reg$', '_HKCU.reg'
+        
+        Start-Process -FilePath "reg.exe" -ArgumentList "export HKLM `"$BackupFileHKLM`" /y" -Wait -NoNewWindow
+        Start-Process -FilePath "reg.exe" -ArgumentList "export HKCU `"$BackupFileHKCU`" /y" -Wait -NoNewWindow
+        
+        # Criar arquivo combinado
+        $CombinedContent = @()
+        $CombinedContent += Get-Content $BackupFileHKLM
+        $CombinedContent += Get-Content $BackupFileHKCU
+        $CombinedContent | Out-File -FilePath $BackupFile -Encoding UTF8
+        
+        # Remover arquivos temporários
+        Remove-Item $BackupFileHKLM -Force -ErrorAction SilentlyContinue
+        Remove-Item $BackupFileHKCU -Force -ErrorAction SilentlyContinue
+        Write-Host "Backup do Registro (HKLM + HKCU) concluído com sucesso em: $BackupFile" -ForegroundColor Green
         return $true
     }
     catch {
@@ -63,5 +77,3 @@ function Restore-Registry {
     }
 }
 
-# Exporta as funções para uso em outros scripts
-Export-ModuleMember -Function Backup-Registry, Restore-Registry

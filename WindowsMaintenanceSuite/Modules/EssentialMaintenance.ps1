@@ -1,4 +1,4 @@
-function Start-EssentialMaintenance {
+function Invoke-EssentialMaintenance {
     Write-Log "Iniciando Manutenção Essencial..." "INFO"
     
     # Criar Ponto de Restauração (Segurança)
@@ -34,7 +34,7 @@ function Start-EssentialMaintenance {
     
     # 4. Verificação de Integridade (SFC)
     Write-Log "Executando SFC /scannow (Isso pode demorar)..." "INFO"
-    $sfcResult = sfc /scannow
+    sfc /scannow | Out-Null
     if ($LASTEXITCODE -ne 0) {
         Write-Log "SFC encontrou erros que não puderam ser corrigidos." "WARNING"
     } else {
@@ -43,7 +43,7 @@ function Start-EssentialMaintenance {
     
     # 5. DISM RestoreHealth
     Write-Log "Executando DISM RestoreHealth..." "INFO"
-    $dismResult = DISM /Online /Cleanup-Image /RestoreHealth
+    DISM /Online /Cleanup-Image /RestoreHealth | Out-Null
     if ($LASTEXITCODE -ne 0) {
         Write-Log "DISM falhou ao restaurar a imagem." "ERROR"
     } else {
@@ -63,4 +63,3 @@ function Start-EssentialMaintenance {
     Write-Log "Manutenção Essencial concluída com sucesso!" "SUCCESS"
 }
 
-Export-ModuleMember -Function Start-EssentialMaintenance

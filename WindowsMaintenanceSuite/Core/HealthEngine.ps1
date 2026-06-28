@@ -35,4 +35,3 @@ function Get-SystemHealthScore {
     }
 }
 
-Export-ModuleMember -Function Get-SystemHealthScore

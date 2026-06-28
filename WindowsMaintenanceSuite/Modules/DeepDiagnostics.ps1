@@ -1,10 +1,16 @@
-function Start-DeepDiagnostics {
-    Write-Log "Iniciando Diagnóstico Profundo..." "INFO"
+function Invoke-DeepDiagnostics {
+    Write-Log "Iniciando Diagnostico Profundo..." "INFO"
+    
+    # Garantir que o diretório Reports existe
+    $ReportsDir = Join-Path $PSScriptRoot "..\Reports"
+    if (-not (Test-Path $ReportsDir)) {
+        New-Item -ItemType Directory -Path $ReportsDir -Force | Out-Null
+    }
     
     $ReportPath = Join-Path $PSScriptRoot "..\Reports\DeepDiag_$(Get-Date -Format 'yyyyMMdd_HHmm').txt"
     $Report = @()
     $Report += "===================================================="
-    $Report += "        RELATÓRIO DE DIAGNÓSTICO PROFUNDO"
+    $Report += "        RELATORIO DE DIAGNOSTICO PROFUNDO"
     $Report += "        Data: $(Get-Date)"
     $Report += "===================================================="
     $Report += ""
@@ -13,7 +19,7 @@ function Start-DeepDiagnostics {
     $CPU = Get-CimInstance Win32_Processor
     $Report += "[CPU]"
     $Report += "Modelo: $($CPU.Name)"
-    $Report += "Núcleos: $($CPU.NumberOfCores)"
+    $Report += "Nucleos: $($CPU.NumberOfCores)"
     $Report += "Threads: $($CPU.NumberOfLogicalProcessors)"
     $Report += ""
     
@@ -23,7 +29,7 @@ function Start-DeepDiagnostics {
     $Report += "[RAM]"
     $Report += "Total: $([Math]::Round($TotalRAM, 2)) GB"
     foreach ($module in $RAM) {
-        $Report += "Módulo: $($module.Capacity / 1GB)GB | Velocidade: $($module.Speed)MHz"
+        $Report += "Modulo: $($module.Capacity / 1GB)GB | Velocidade: $($module.Speed)MHz"
     }
     $Report += ""
     
@@ -37,12 +43,10 @@ function Start-DeepDiagnostics {
     }
     
     $Report | Out-File -FilePath $ReportPath
-    Write-Log "Relatório gerado em: $ReportPath" "SUCCESS"
+    Write-Log "Relatorio gerado em: $ReportPath" "SUCCESS"
     
     # Exibe no console também
     $Report | ForEach-Object { Write-Host $_ }
     
     Update-WMSHistory -Key "LastDeepDiag" -Value (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 }
-
-Export-ModuleMember -Function Start-DeepDiagnostics

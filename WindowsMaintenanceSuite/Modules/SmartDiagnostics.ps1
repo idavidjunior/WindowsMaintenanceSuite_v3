@@ -1,4 +1,4 @@
-function Start-SmartDiagnostics {
+function Invoke-SmartDiagnostics {
     Write-Log "Iniciando Diagnóstico SMART dos Discos..." "INFO"
     
     $Disks = Get-PhysicalDisk
@@ -7,7 +7,11 @@ function Start-SmartDiagnostics {
         Write-Host "----------------------------------------------------"
         Write-Host "Disco: $($disk.FriendlyName)" -ForegroundColor Cyan
         Write-Host "Modelo: $($disk.Model)"
-        Write-Host "Saúde: $($disk.HealthStatus)" -ForegroundColor ($disk.HealthStatus -eq "Healthy" ? "Green" : "Red")
+        if ($disk.HealthStatus -eq "Healthy") {
+            Write-Host "Saúde: $($disk.HealthStatus)" -ForegroundColor Green
+        } else {
+            Write-Host "Saúde: $($disk.HealthStatus)" -ForegroundColor Red
+        }
         Write-Host "Status Operacional: $($disk.OperationalStatus)"
         
         if ($disk.BusType -eq "NVMe" -or $disk.BusType -eq "SSD") {
@@ -24,4 +28,3 @@ function Start-SmartDiagnostics {
     Write-Log "Diagnóstico SMART concluído." "SUCCESS"
 }
 
-Export-ModuleMember -Function Start-SmartDiagnostics

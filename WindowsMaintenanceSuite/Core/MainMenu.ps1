@@ -25,7 +25,7 @@ function Show-MainMenu {
         Write-Host "=========================================" -ForegroundColor Green
         Write-Host "  Windows Maintenance Suite - Menu Principal " -ForegroundColor Green
         Write-Host "=========================================" -ForegroundColor Green
-        Write-Host "\nSelecione uma opção:"
+        Write-Host "`nSelecione uma opção:"
         Write-Host "  1. Manutenção Essencial"
         Write-Host "  2. Manutenção Completa"
         Write-Host "  3. Diagnósticos Aprofundados"
@@ -34,7 +34,7 @@ function Show-MainMenu {
         Write-Host "  6. Restaurar Registro (CUIDADO!)"
         Write-Host "  7. Ajustes de Sistema (Tweaks)"
         Write-Host "  8. Sair"
-        Write-Host "\n=========================================" -ForegroundColor Green
+        Write-Host "`n=========================================" -ForegroundColor Green
 
         $choice = Read-Host "Digite o número da sua escolha"
 
@@ -42,33 +42,33 @@ function Show-MainMenu {
             "1" {
                 Write-Log "Iniciando Manutenção Essencial."
                 Invoke-EssentialMaintenance
-                Pause-Script
+                Wait-KeyPress
             }
             "2" {
                 Write-Log "Iniciando Manutenção Completa."
                 Invoke-UltimateMaintenance
-                Pause-Script
+                Wait-KeyPress
             }
             "3" {
                 Write-Log "Iniciando Diagnósticos Aprofundados."
                 Invoke-DeepDiagnostics
-                Pause-Script
+                Wait-KeyPress
             }
             "4" {
                 Write-Log "Iniciando Diagnósticos Inteligentes (SMART)."
                 Invoke-SmartDiagnostics
-                Pause-Script
+                Wait-KeyPress
             }
             "5" {
                 Write-Log "Iniciando Backup do Registro."
                 Backup-Registry
-                Pause-Script
+                Wait-KeyPress
             }
             "6" {
                 Write-Log "Iniciando Restauração do Registro."
                 $backupFiles = Get-ChildItem -Path "C:\WMS_RegistryBackups" -Filter "RegistryBackup_*.reg" | Select-Object -ExpandProperty FullName
                 if ($backupFiles.Count -gt 0) {
-                    Write-Host "\nBackups de Registro disponíveis:" -ForegroundColor Yellow
+                    Write-Host "`nBackups de Registro disponíveis:" -ForegroundColor Yellow
                     for ($i = 0; $i -lt $backupFiles.Count; $i++) {
                         Write-Host "  $($i+1). $($backupFiles[$i])"
                     }
@@ -81,12 +81,12 @@ function Show-MainMenu {
                 } else {
                     Write-Host "Nenhum backup de registro encontrado em C:\WMS_RegistryBackups." -ForegroundColor Yellow
                 }
-                Pause-Script
+                Wait-KeyPress
             }
             "7" {
                 Write-Log "Iniciando Ajustes de Sistema (Tweaks)."
                 Invoke-SystemTweaks
-                Pause-Script
+                Wait-KeyPress
             }
             "8" {
                 Write-Log "Saindo do Windows Maintenance Suite."
@@ -100,8 +100,8 @@ function Show-MainMenu {
     }
 }
 
-function Pause-Script {
-    Write-Host "\nPressione qualquer tecla para continuar..." -ForegroundColor DarkGray
+function Wait-KeyPress {
+    Write-Host "`nPressione qualquer tecla para continuar..." -ForegroundColor DarkGray
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }
 

@@ -1,7 +1,14 @@
 $ConfigPath = Join-Path $PSScriptRoot "..\Config\Settings.json"
 $HistoryPath = Join-Path $PSScriptRoot "..\History\MaintenanceHistory.json"
+$ConfigDir = Join-Path $PSScriptRoot "..\Config"
+$HistoryDir = Join-Path $PSScriptRoot "..\History"
 
 function Get-WMSConfig {
+    # Garantir que o diretório existe
+    if (-not (Test-Path $ConfigDir)) {
+        New-Item -ItemType Directory -Path $ConfigDir -Force | Out-Null
+    }
+    
     if (Test-Path $ConfigPath) {
         return Get-Content $ConfigPath | ConvertFrom-Json
     } else {
@@ -16,6 +23,11 @@ function Get-WMSConfig {
 }
 
 function Get-WMSHistory {
+    # Garantir que o diretório existe
+    if (-not (Test-Path $HistoryDir)) {
+        New-Item -ItemType Directory -Path $HistoryDir -Force | Out-Null
+    }
+    
     if (Test-Path $HistoryPath) {
         return Get-Content $HistoryPath | ConvertFrom-Json
     } else {
@@ -37,4 +49,3 @@ function Update-WMSHistory {
     $History | ConvertTo-Json | Set-Content $HistoryPath
 }
 
-Export-ModuleMember -Function Get-WMSConfig, Get-WMSHistory, Update-WMSHistory

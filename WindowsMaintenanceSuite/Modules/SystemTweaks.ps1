@@ -76,7 +76,7 @@ function Disable-BasicTelemetry {
 }
 
 # 3. Tweak: Acelerar Resposta do Menu Iniciar
-function SpeedUp-StartMenu {
+function Set-StartMenuSpeed {
     Write-Host "Aplicando Tweak: Acelerar Resposta do Menu Iniciar..." -ForegroundColor Cyan
     $keyPath = "HKCU:\Control Panel\Desktop"
     $valueName = "MenuShowDelay"
@@ -138,10 +138,10 @@ function Optimize-TCP {
 }
 
 function Invoke-SystemTweaks {
-    Write-Host "\n=========================================" -ForegroundColor Yellow
+    Write-Host "`n=========================================" -ForegroundColor Yellow
     Write-Host "  Windows Maintenance Suite - Ajustes de Sistema " -ForegroundColor Yellow
     Write-Host "=========================================" -ForegroundColor Yellow
-    Write-Host "\nSelecione os ajustes que deseja aplicar:"
+    Write-Host "`nSelecione os ajustes que deseja aplicar:"
     Write-Host "  1. Ativar Plano de Energia 'Desempenho Máximo'"
     Write-Host "  2. Desativar Telemetria Básica"
     Write-Host "  3. Acelerar Resposta do Menu Iniciar"
@@ -149,20 +149,20 @@ function Invoke-SystemTweaks {
     Write-Host "  5. Otimizar TCP (Desativar Nagle's Algorithm)"
     Write-Host "  6. Aplicar TODOS os ajustes acima"
     Write-Host "  7. Voltar ao Menu Principal"
-    Write-Host "\n=========================================" -ForegroundColor Yellow
+    Write-Host "`n=========================================" -ForegroundColor Yellow
 
     $choice = Read-Host "Digite o número da sua escolha"
 
     switch ($choice) {
         "1" { Set-HighPerformancePowerPlan }
         "2" { Disable-BasicTelemetry }
-        "3" { SpeedUp-StartMenu }
+        "3" { Set-StartMenuSpeed }
         "4" { Disable-Hibernation }
         "5" { Optimize-TCP }
         "6" {
             Set-HighPerformancePowerPlan
             Disable-BasicTelemetry
-            SpeedUp-StartMenu
+            Set-StartMenuSpeed
             Disable-Hibernation
             Optimize-TCP
         }
@@ -174,4 +174,3 @@ function Invoke-SystemTweaks {
     }
 }
 
-Export-ModuleMember -Function Invoke-SystemTweaks, Backup-RegistryKey, Set-HighPerformancePowerPlan, Disable-BasicTelemetry, SpeedUp-StartMenu, Disable-Hibernation, Optimize-TCP
