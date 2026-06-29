@@ -34,19 +34,36 @@ function Backup-RegistryKey {
 function Set-HighPerformancePowerPlan {
     Write-Host "`n[1/5] Ativando Plano de Energia 'Desempenho Maximo'..." -ForegroundColor Yellow
     try {
-        # GUID para Desempenho Maximo (pode estar oculto)
-        $HighPerformanceGUID = "4d3a011a-356a-464a-874e-417127110166"
+        # Descobrir GUID do plano de Desempenho Maximo dinamicamente
+        $schemes = powercfg /list
+        $highPerfGUID = $null
         
-        # Verifica se o plano ja existe ou se precisa ser importado/ativado
-        $currentPlan = (powercfg /getactivescheme).Split(" ")[3]
-        if ($currentPlan -ne $HighPerformanceGUID) {
-            # Tenta ativar o plano
-            powercfg /setactive $HighPerformanceGUID | Out-Null
-            Write-Host "      [OK] Plano de energia 'Desempenho Maximo' ativado com sucesso." -ForegroundColor Green
-            Write-Log "Plano de energia 'Desempenho Maximo' ativado." "SUCCESS"
-        } else {
+        # Tenta encontrar "Desempenho Maximo" ou "Ultimate Performance"
+        foreach ($line in $schemes) {
+            if ($line -match "Desempenho [Mm][aá]ximo|Ultimate Performance|High Performance|Performance") {
+                if ($line -match '([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})') {
+                    $highPerfGUID = $matches[1]
+                    break
+                }
+            }
+        }
+        
+        if ($null -eq $highPerfGUID) {
+            Write-Host "      [ERRO] Plano de Desempenho Maximo nao encontrado no sistema." -ForegroundColor Red
+            Write-Log "Plano de Desempenho Maximo nao encontrado." "ERROR"
+            return
+        }
+        
+        # Verifica se o plano ja esta ativo
+        $currentScheme = powercfg /getactivescheme
+        if ($currentScheme -match $highPerfGUID) {
             Write-Host "      [INFO] Plano de energia 'Desempenho Maximo' ja estava ativo." -ForegroundColor Cyan
             Write-Log "Plano de energia 'Desempenho Maximo' ja estava ativo." "INFO"
+        } else {
+            # Tenta ativar o plano
+            powercfg /setactive $highPerfGUID | Out-Null
+            Write-Host "      [OK] Plano de energia 'Desempenho Maximo' ativado com sucesso (GUID: $highPerfGUID)." -ForegroundColor Green
+            Write-Log "Plano de energia 'Desempenho Maximo' ativado." "SUCCESS"
         }
     }
     catch {
@@ -168,18 +185,36 @@ function Get-TweaksStatus {
     # 1. Verificar Plano de Energia
     Write-Host "`n[1/5] Plano de Energia 'Desempenho Maximo':" -ForegroundColor Yellow
     try {
-        $HighPerformanceGUID = "4d3a011a-356a-464a-874e-417127110166"
-        $schemeOutput = powercfg /getactivescheme
-        if ($schemeOutput -match '([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})') {
-            $currentPlan = $matches[1]
-            if ($currentPlan -eq $HighPerformanceGUID) {
-                Write-Host "      [ATIVO] Plano de Desempenho Maximo esta ativo." -ForegroundColor Green
+        # Descobrir GUID do plano de Desempenho Maximo dinamicamente
+        $schemes = powercfg /list
+        $highPerfGUID = $null
+        
+        foreach ($line in $schemes) {
+            if ($line -match "Desempenho [Mm]áximo|Ultimate Performance|High Performance") {
+                if ($line -match '([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})') {
+                    $highPerfGUID = $matches[1]
+                    break
+                }
+            }
+        }
+        
+        if ($null -eq $highPerfGUID) {
+            Write-Host "      [ERRO] Plano de Desempenho Maximo nao encontrado no sistema." -ForegroundColor Red
+        } else {
+            # Verifica se o plano atual e o de desempenho maximo
+            $currentScheme = powercfg /getactivescheme
+            if ($currentScheme -match $highPerfGUID) {
+                Write-Host "      [ATIVO] Plano de Desempenho Maximo esta ativo (GUID: $highPerfGUID)." -ForegroundColor Green
                 $appliedCount++
             } else {
-                Write-Host "      [INATIVO] Plano atual: $currentPlan" -ForegroundColor Red
+                # Extrair GUID do plano atual
+                if ($currentScheme -match '([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})') {
+                    $currentPlan = $matches[1]
+                    Write-Host "      [INATIVO] Plano atual: $currentPlan (Desempenho Maximo: $highPerfGUID)" -ForegroundColor Red
+                } else {
+                    Write-Host "      [INATIVO] Plano atual diferente de Desempenho Maximo." -ForegroundColor Red
+                }
             }
-        } else {
-            Write-Host "      [ERRO] Nao foi possivel extrair GUID do plano atual." -ForegroundColor Red
         }
     } catch {
         Write-Host "      [ERRO] Nao foi possivel verificar o plano de energia." -ForegroundColor Red
