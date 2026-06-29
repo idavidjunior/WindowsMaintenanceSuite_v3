@@ -71,7 +71,7 @@ function Get-PerformanceReport {
     # 3. Informações de Disco
     Write-Host "`n[3/6] INFORMAÇÕES DE DISCO" -ForegroundColor Yellow
     try {
-        $disks = Get-Volume | Where-Object { $_.DriveLetter -ne $null }
+        $disks = Get-Volume | Where-Object { $null -ne $_.DriveLetter }
         foreach ($disk in $disks) {
             $diskSize = $disk.Size / 1GB
             $diskFree = $disk.SizeRemaining / 1GB
