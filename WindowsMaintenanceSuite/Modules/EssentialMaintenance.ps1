@@ -114,7 +114,7 @@ function Invoke-EssentialMaintenance {
     # 7. Otimizacao de Disco
     Write-Host "`n[EXTRA] Otimizando discos (Defrag/Trim)..." -ForegroundColor Yellow
     Write-Log "Otimizando discos (Defrag/Trim)..." "INFO"
-    $defragResult = defrag /O
+    defrag /O | Out-Null
     Write-Host "      [OK] Otimizacao de disco concluida." -ForegroundColor Green
     Write-Log "Otimizacao de disco concluida." "SUCCESS"
     
