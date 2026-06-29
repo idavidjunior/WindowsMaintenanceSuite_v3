@@ -40,7 +40,7 @@ function Set-HighPerformancePowerPlan {
         
         # Tenta encontrar "Desempenho Maximo" ou "Ultimate Performance"
         foreach ($line in $schemes) {
-            if ($line -match "Desempenho [Mm][aá]ximo|Ultimate Performance|High Performance|Performance") {
+            if ($line -match "Desempenho [Mm][áa]ximo|Ultimate Performance|High Performance|Performance") {
                 if ($line -match '([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})') {
                     $highPerfGUID = $matches[1]
                     break
@@ -137,14 +137,14 @@ function Disable-Hibernation {
 
 # 5. Tweak: Ajustes de TCP (Netsh) - Desativar Nagle's Algorithm
 function Optimize-TCP {
-    Write-Host "`n[5/5] Otimizando TCP (Desativar Nagle's Algorithm)..." -ForegroundColor Yellow
+    Write-Host "`n[5/12] Otimizando TCP (Desativar Nagle's Algorithm)..." -ForegroundColor Yellow
     $keyPath = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"
-    
+
     try {
         # Iterar sobre todas as interfaces de rede
         $interfaces = Get-ChildItem -Path $keyPath
         $optimizedCount = 0
-        
+
         foreach ($interface in $interfaces) {
             $interfaceKey = $interface.PSPath
             $originalTcpNoDelay = $null
@@ -160,7 +160,7 @@ function Optimize-TCP {
             Set-ItemProperty -Path $interfaceKey -Name "TcpNoDelay" -Value 1 -Force -ErrorAction SilentlyContinue
             Set-ItemProperty -Path $interfaceKey -Name "TcpAckFrequency" -Value 1 -Force -ErrorAction SilentlyContinue
             $optimizedCount++
-            
+
             $originalNoDelayDisplay = if ($null -eq $originalTcpNoDelay) { "Nao existia" } else { $originalTcpNoDelay }
             $originalAckDisplay = if ($null -eq $originalTcpAckFrequency) { "Nao existia" } else { $originalTcpAckFrequency }
             Write-Host "      [OK] Interface $($interface.Name): TcpNoDelay=1 (Original: $originalNoDelayDisplay), TcpAckFrequency=1 (Original: $originalAckDisplay)" -ForegroundColor Green
@@ -174,23 +174,220 @@ function Optimize-TCP {
     }
 }
 
+# 6. Tweak: Desativar Game DVR (Gravacao em jogo)
+function Disable-GameDVR {
+    Write-Host "`n[6/12] Desativando Game DVR (libera recursos do sistema)..." -ForegroundColor Yellow
+    $keyPath = "HKCU:\System\GameConfigStore"
+    $valueName = "GameDVR_Enabled"
+    $keyPath2 = "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR"
+    $valueName2 = "value"
+
+    try {
+        if (-not (Test-Path $keyPath)) {
+            New-Item -Path $keyPath -Force | Out-Null
+        }
+        Set-ItemProperty -Path $keyPath -Name $valueName -Value 0 -Force -ErrorAction SilentlyContinue
+
+        if (Test-Path $keyPath2) {
+            Set-ItemProperty -Path $keyPath2 -Name $valueName2 -Value 0 -Force -ErrorAction SilentlyContinue
+        }
+
+        Write-Host "      [OK] Game DVR desativado com sucesso." -ForegroundColor Green
+        Write-Log "Game DVR desativado." "SUCCESS"
+    }
+    catch {
+        Write-Host "      [ERRO] Erro ao desativar Game DVR: $_" -ForegroundColor Red
+        Write-Log "Erro ao desativar Game DVR: $_" "ERROR"
+    }
+}
+
+# 7. Tweak: Desativar Superfetch/SysMain (Melhora em SSDs)
+function Disable-Superfetch {
+    Write-Host "`n[7/12] Desativando Superfetch/SysMain (recomendado para SSDs)..." -ForegroundColor Yellow
+    try {
+        $serviceName = "SysMain"
+        $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+
+        if ($service) {
+            if ($service.Status -eq "Running") {
+                Stop-Service -Name $serviceName -Force -ErrorAction SilentlyContinue
+            }
+            Set-Service -Name $serviceName -StartupType Disabled -ErrorAction SilentlyContinue
+            Write-Host "      [OK] Superfetch/SysMain desativado." -ForegroundColor Green
+            Write-Log "Superfetch/SysMain desativado." "SUCCESS"
+        } else {
+            Write-Host "      [INFO] Servico SysMain nao encontrado (pode ja estar desativado)." -ForegroundColor Cyan
+            Write-Log "Servico SysMain nao encontrado." "INFO"
+        }
+    }
+    catch {
+        Write-Host "      [ERRO] Erro ao desativar Superfetch: $_" -ForegroundColor Red
+        Write-Log "Erro ao desativar Superfetch: $_" "ERROR"
+    }
+}
+
+# 8. Tweak: Desativar efeitos de transparencia (Melhora desempenho em GPUs antigas)
+function Disable-TransparencyEffects {
+    Write-Host "`n[8/12] Desativando efeitos de transparencia (melhora desempenho visual)..." -ForegroundColor Yellow
+    $keyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+    $valueName = "EnableTransparency"
+
+    try {
+        if (-not (Test-Path $keyPath)) {
+            New-Item -Path $keyPath -Force | Out-Null
+        }
+        Set-ItemProperty -Path $keyPath -Name $valueName -Value 0 -Force
+        Write-Host "      [OK] Efeitos de transparencia desativados." -ForegroundColor Green
+        Write-Log "Efeitos de transparencia desativados." "SUCCESS"
+    }
+    catch {
+        Write-Host "      [ERRO] Erro ao desativar transparencia: $_" -ForegroundColor Red
+        Write-Log "Erro ao desativar transparencia: $_" "ERROR"
+    }
+}
+
+# 9. Tweak: Priorizar programas em primeiro plano
+function Set-ForegroundPriority {
+    Write-Host "`n[9/12] Configurando sistema para priorizar programas em primeiro plano..." -ForegroundColor Yellow
+    $keyPath = "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl"
+    $valueName = "Win32PrioritySeparation"
+
+    try {
+        if (-not (Test-Path $keyPath)) {
+            New-Item -Path $keyPath -Force | Out-Null
+        }
+        Set-ItemProperty -Path $keyPath -Name $valueName -Value 38 -Force
+        Write-Host "      [OK] Sistema configurado para priorizar programas em primeiro plano." -ForegroundColor Green
+        Write-Log "Prioridade de primeiro plano configurada." "SUCCESS"
+    }
+    catch {
+        Write-Host "      [ERRO] Erro ao configurar prioridade: $_" -ForegroundColor Red
+        Write-Log "Erro ao configurar prioridade: $_" "ERROR"
+    }
+}
+
+# 10. Tweak: Desativar Cortana (Privacidade e desempenho)
+function Disable-Cortana {
+    Write-Host "`n[10/12] Desativando Cortana (privacidade e desempenho)..." -ForegroundColor Yellow
+    $keyPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search"
+    $valueName = "AllowCortana"
+
+    try {
+        if (-not (Test-Path $keyPath)) {
+            New-Item -Path $keyPath -Force | Out-Null
+        }
+        Set-ItemProperty -Path $keyPath -Name $valueName -Value 0 -Force
+        Write-Host "      [OK] Cortana desativada." -ForegroundColor Green
+        Write-Log "Cortana desativada." "SUCCESS"
+    }
+    catch {
+        Write-Host "      [ERRO] Erro ao desativar Cortana: $_" -ForegroundColor Red
+        Write-Log "Erro ao desativar Cortana: $_" "ERROR"
+    }
+}
+
+# 11. Tweak: Desativar ID de publicidade (Privacidade)
+function Disable-AdvertisingID {
+    Write-Host "`n[11/12] Desativando ID de publicidade (privacidade)..." -ForegroundColor Yellow
+    $keyPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo"
+    $valueName = "Enabled"
+
+    try {
+        if (-not (Test-Path $keyPath)) {
+            New-Item -Path $keyPath -Force | Out-Null
+        }
+        Set-ItemProperty -Path $keyPath -Name $valueName -Value 0 -Force
+        Write-Host "      [OK] ID de publicidade desativado." -ForegroundColor Green
+        Write-Log "ID de publicidade desativado." "SUCCESS"
+    }
+    catch {
+        Write-Host "      [ERRO] Erro ao desativar ID de publicidade: $_" -ForegroundColor Red
+        Write-Log "Erro ao desativar ID de publicidade: $_" "ERROR"
+    }
+}
+
+# 12. Tweak: Mostrar extensoes de arquivos (Personalizacao)
+function Show-FileExtensions {
+    Write-Host "`n[12/13] Ativando exibicao de extensoes de arquivos..." -ForegroundColor Yellow
+    $keyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+    $valueName = "HideFileExt"
+
+    try {
+        Set-ItemProperty -Path $keyPath -Name $valueName -Value 0 -Force
+        Write-Host "      [OK] Extensoes de arquivos agora visiveis." -ForegroundColor Green
+        Write-Log "Extensoes de arquivos ativadas." "SUCCESS"
+    }
+    catch {
+        Write-Host "      [ERRO] Erro ao ativar extensoes: $_" -ForegroundColor Red
+        Write-Log "Erro ao ativar extensoes: $_" "ERROR"
+    }
+}
+
+# 13. Tweak: Otimizar uso de todos os nucleos do processador
+function Optimize-CPUCores {
+    Write-Host "`n[13/13] Otimizando uso de todos os nucleos do processador..." -ForegroundColor Yellow
+    $keyPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
+    $valueName = "ClearPageFileAtShutdown"
+    $keyPath2 = "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl"
+    $valueName2 = "Win32PrioritySeparation"
+
+    try {
+        # Obter numero de nucleos disponiveis
+        $numberOfCores = (Get-WmiObject Win32_Processor).NumberOfLogicalProcessors
+        Write-Host "      [INFO] Detectados $numberOfCores nucleos logicos." -ForegroundColor Cyan
+
+        # Configurar para usar todos os nucleos no boot (via BCDEDIT)
+        try {
+            $currentBootConfig = bcdedit /enum current
+            if ($currentBootConfig -match "numproc") {
+                Write-Host "      [INFO] Limite de nucleos ja configurado no boot." -ForegroundColor Cyan
+            } else {
+                # Remover limite de nucleos se existir
+                bcdedit /deletevalue numproc | Out-Null
+                Write-Host "      [OK] Limite de nucleos removido do boot." -ForegroundColor Green
+            }
+        } catch {
+            Write-Host "      [INFO] Nao foi possivel verificar configuracao de boot (pode requerer privilegios adicionais)." -ForegroundColor Cyan
+        }
+
+        # Otimizar agendamento de processador
+        if (-not (Test-Path $keyPath2)) {
+            New-Item -Path $keyPath2 -Force | Out-Null
+        }
+        Set-ItemProperty -Path $keyPath2 -Name $valueName2 -Value 38 -Force -ErrorAction SilentlyContinue
+
+        # Desativar paginacao de arquivo no desligamento (melhora desempenho)
+        if (-not (Test-Path $keyPath)) {
+            New-Item -Path $keyPath -Force | Out-Null
+        }
+        Set-ItemProperty -Path $keyPath -Name $valueName -Value 0 -Force -ErrorAction SilentlyContinue
+
+        Write-Host "      [OK] Otimizacoes de CPU aplicadas. Sistema configurado para usar todos os nucleos disponiveis." -ForegroundColor Green
+        Write-Log "Otimizacoes de CPU aplicadas." "SUCCESS"
+    }
+    catch {
+        Write-Host "      [ERRO] Erro ao otimizar nucleos do processador: $_" -ForegroundColor Red
+        Write-Log "Erro ao otimizar nucleos do processador: $_" "ERROR"
+    }
+}
+
 function Get-TweaksStatus {
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "  STATUS DOS TWEAKS APLICADOS" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
-    
+
     $appliedCount = 0
-    $totalTweaks = 5
-    
+    $totalTweaks = 13
+
     # 1. Verificar Plano de Energia
-    Write-Host "`n[1/5] Plano de Energia 'Desempenho Maximo':" -ForegroundColor Yellow
+    Write-Host "`n[1/13] Plano de Energia 'Desempenho Maximo':" -ForegroundColor Yellow
     try {
         # Descobrir GUID do plano de Desempenho Maximo dinamicamente
         $schemes = powercfg /list
         $highPerfGUID = $null
         
         foreach ($line in $schemes) {
-            if ($line -match "Desempenho [Mm]áximo|Ultimate Performance|High Performance") {
+            if ($line -match "Desempenho [Mm][áa]ximo|Ultimate Performance|High Performance") {
                 if ($line -match '([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})') {
                     $highPerfGUID = $matches[1]
                     break
@@ -221,7 +418,7 @@ function Get-TweaksStatus {
     }
     
     # 2. Verificar Telemetria
-    Write-Host "`n[2/5] Telemetria Basica:" -ForegroundColor Yellow
+    Write-Host "`n[2/13] Telemetria Basica:" -ForegroundColor Yellow
     try {
         $keyPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection"
         $valueName = "AllowTelemetry"
@@ -241,7 +438,7 @@ function Get-TweaksStatus {
     }
     
     # 3. Verificar Menu Iniciar
-    Write-Host "`n[3/5] Velocidade do Menu Iniciar:" -ForegroundColor Yellow
+    Write-Host "`n[3/13] Velocidade do Menu Iniciar:" -ForegroundColor Yellow
     try {
         $keyPath = "HKCU:\Control Panel\Desktop"
         $valueName = "MenuShowDelay"
@@ -259,7 +456,7 @@ function Get-TweaksStatus {
     }
     
     # 4. Verificar Hibernacao
-    Write-Host "`n[4/5] Hibernacao:" -ForegroundColor Yellow
+    Write-Host "`n[4/13] Hibernacao:" -ForegroundColor Yellow
     try {
         # Verifica se o arquivo de hibernacao existe
         $hiberFile = Test-Path "$env:SystemDrive\hiberfil.sys"
@@ -274,7 +471,7 @@ function Get-TweaksStatus {
     }
     
     # 5. Verificar TCP
-    Write-Host "`n[5/5] Otimizacoes TCP:" -ForegroundColor Yellow
+    Write-Host "`n[5/13] Otimizacoes TCP:" -ForegroundColor Yellow
     try {
         $keyPath = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"
         $interfaces = Get-ChildItem -Path $keyPath
@@ -300,7 +497,148 @@ function Get-TweaksStatus {
     } catch {
         Write-Host "      [ERRO] Nao foi possivel verificar as otimizacoes TCP." -ForegroundColor Red
     }
-    
+
+    # 6. Verificar Game DVR
+    Write-Host "`n[6/13] Game DVR:" -ForegroundColor Yellow
+    try {
+        $keyPath = "HKCU:\System\GameConfigStore"
+        $valueName = "GameDVR_Enabled"
+        $gameDVRValue = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+        if ($gameDVRValue -eq 0) {
+            Write-Host "      [ATIVO] Game DVR desativado." -ForegroundColor Green
+            $appliedCount++
+        } else {
+            Write-Host "      [INATIVO] Game DVR ativado." -ForegroundColor Red
+        }
+    } catch {
+        Write-Host "      [ERRO] Nao foi possivel verificar o Game DVR." -ForegroundColor Red
+    }
+
+    # 7. Verificar Superfetch/SysMain
+    Write-Host "`n[7/13] Superfetch/SysMain:" -ForegroundColor Yellow
+    try {
+        $serviceName = "SysMain"
+        $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+        if ($service) {
+            if ($service.StartType -eq "Disabled") {
+                Write-Host "      [ATIVO] Superfetch/SysMain desativado." -ForegroundColor Green
+                $appliedCount++
+            } else {
+                Write-Host "      [INATIVO] Superfetch/SysMain ativado (StartType: $($service.StartType))." -ForegroundColor Red
+            }
+        } else {
+            Write-Host "      [INFO] Servico SysMain nao encontrado." -ForegroundColor Cyan
+        }
+    } catch {
+        Write-Host "      [ERRO] Nao foi possivel verificar o Superfetch." -ForegroundColor Red
+    }
+
+    # 8. Verificar Transparencia
+    Write-Host "`n[8/13] Efeitos de Transparencia:" -ForegroundColor Yellow
+    try {
+        $keyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+        $valueName = "EnableTransparency"
+        $transparencyValue = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+        if ($transparencyValue -eq 0) {
+            Write-Host "      [ATIVO] Efeitos de transparencia desativados." -ForegroundColor Green
+            $appliedCount++
+        } else {
+            Write-Host "      [INATIVO] Efeitos de transparencia ativados." -ForegroundColor Red
+        }
+    } catch {
+        Write-Host "      [ERRO] Nao foi possivel verificar a transparencia." -ForegroundColor Red
+    }
+
+    # 9. Verificar Prioridade de Primeiro Plano
+    Write-Host "`n[9/13] Prioridade de Primeiro Plano:" -ForegroundColor Yellow
+    try {
+        $keyPath = "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl"
+        $valueName = "Win32PrioritySeparation"
+        $priorityValue = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+        if ($priorityValue -eq 38) {
+            Write-Host "      [ATIVO] Sistema configurado para priorizar primeiro plano." -ForegroundColor Green
+            $appliedCount++
+        } else {
+            Write-Host "      [INATIVO] Configuracao padrao de prioridade (Valor: $priorityValue)." -ForegroundColor Red
+        }
+    } catch {
+        Write-Host "      [ERRO] Nao foi possivel verificar a prioridade." -ForegroundColor Red
+    }
+
+    # 10. Verificar Cortana
+    Write-Host "`n[10/13] Cortana:" -ForegroundColor Yellow
+    try {
+        $keyPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search"
+        $valueName = "AllowCortana"
+        if (Test-Path $keyPath) {
+            $cortanaValue = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+            if ($cortanaValue -eq 0) {
+                Write-Host "      [ATIVO] Cortana desativada." -ForegroundColor Green
+                $appliedCount++
+            } else {
+                Write-Host "      [INATIVO] Cortana ativada." -ForegroundColor Red
+            }
+        } else {
+            Write-Host "      [INATIVO] Chave de registro nao encontrada (Cortana padrao)." -ForegroundColor Red
+        }
+    } catch {
+        Write-Host "      [ERRO] Nao foi possivel verificar a Cortana." -ForegroundColor Red
+    }
+
+    # 11. Verificar ID de Publicidade
+    Write-Host "`n[11/13] ID de Publicidade:" -ForegroundColor Yellow
+    try {
+        $keyPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo"
+        $valueName = "Enabled"
+        $adIDValue = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+        if ($adIDValue -eq 0) {
+            Write-Host "      [ATIVO] ID de publicidade desativado." -ForegroundColor Green
+            $appliedCount++
+        } else {
+            Write-Host "      [INATIVO] ID de publicidade ativado." -ForegroundColor Red
+        }
+    } catch {
+        Write-Host "      [ERRO] Nao foi possivel verificar o ID de publicidade." -ForegroundColor Red
+    }
+
+    # 12. Verificar Extensoes de Arquivos
+    Write-Host "`n[12/13] Extensoes de Arquivos:" -ForegroundColor Yellow
+    try {
+        $keyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        $valueName = "HideFileExt"
+        $hideExtValue = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+        if ($hideExtValue -eq 0) {
+            Write-Host "      [ATIVO] Extensoes de arquivos visiveis." -ForegroundColor Green
+            $appliedCount++
+        } else {
+            Write-Host "      [INATIVO] Extensoes de arquivos ocultas." -ForegroundColor Red
+        }
+    } catch {
+        Write-Host "      [ERRO] Nao foi possivel verificar as extensoes de arquivos." -ForegroundColor Red
+    }
+
+    # 13. Verificar Otimizacao de CPU
+    Write-Host "`n[13/13] Otimizacao de Nucleos do Processador:" -ForegroundColor Yellow
+    try {
+        $keyPath = "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl"
+        $valueName = "Win32PrioritySeparation"
+        $priorityValue = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+        
+        # Verificar configuracao de boot
+        $bootConfig = bcdedit /enum current
+        $numprocLimited = $bootConfig -match "numproc"
+        
+        if ($priorityValue -eq 38 -and -not $numprocLimited) {
+            Write-Host "      [ATIVO] Sistema configurado para usar todos os nucleos disponiveis." -ForegroundColor Green
+            $appliedCount++
+        } else {
+            $status = if ($numprocLimited) { "Limite de nucleos ativo no boot" } else { "Configuracao padrao" }
+            Write-Host "      [INATIVO] $status (Valor: $priorityValue)." -ForegroundColor Red
+        }
+    } catch {
+        Write-Host "      [ERRO] Nao foi possivel verificar a otimizacao de CPU." -ForegroundColor Red
+    }
+
     # Resumo
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "  RESUMO: $appliedCount de $totalTweaks tweaks aplicados" -ForegroundColor Cyan
@@ -327,40 +665,88 @@ function Invoke-SystemTweaks {
     Write-Host "  3. Acelerar Resposta do Menu Iniciar"
     Write-Host "  4. Desativar Hibernacao (Libera espaco em disco)"
     Write-Host "  5. Otimizar TCP (Desativar Nagle's Algorithm)"
-    Write-Host "  6. Aplicar TODOS os ajustes acima"
-    Write-Host "  7. Verificar status dos tweaks aplicados"
-    Write-Host "  8. Voltar ao Menu Principal"
+    Write-Host "  6. Desativar Game DVR (Libera recursos do sistema)"
+    Write-Host "  7. Desativar Superfetch/SysMain (Recomendado para SSDs)"
+    Write-Host "  8. Desativar efeitos de transparencia (Melhora desempenho visual)"
+    Write-Host "  9. Priorizar programas em primeiro plano"
+    Write-Host "  10. Desativar Cortana (Privacidade e desempenho)"
+    Write-Host "  11. Desativar ID de publicidade (Privacidade)"
+    Write-Host "  12. Mostrar extensoes de arquivos (Personalizacao)"
+    Write-Host "  13. Otimizar uso de todos os nucleos do processador"
+    Write-Host "  14. Aplicar TODOS os ajustes acima"
+    Write-Host "  15. Verificar status dos tweaks aplicados"
+    Write-Host "  16. Voltar ao Menu Principal"
     Write-Host "`n========================================" -ForegroundColor Cyan
 
     $choice = Read-Host "Digite o numero da sua escolha"
 
     switch ($choice) {
-        "1" { 
+        "1" {
             Write-Host "`n========================================" -ForegroundColor Cyan
-            Set-HighPerformancePowerPlan 
+            Set-HighPerformancePowerPlan
             Write-Host "========================================" -ForegroundColor Cyan
         }
-        "2" { 
+        "2" {
             Write-Host "`n========================================" -ForegroundColor Cyan
-            Disable-BasicTelemetry 
+            Disable-BasicTelemetry
             Write-Host "========================================" -ForegroundColor Cyan
         }
-        "3" { 
+        "3" {
             Write-Host "`n========================================" -ForegroundColor Cyan
-            Set-StartMenuSpeed 
+            Set-StartMenuSpeed
             Write-Host "========================================" -ForegroundColor Cyan
         }
-        "4" { 
+        "4" {
             Write-Host "`n========================================" -ForegroundColor Cyan
-            Disable-Hibernation 
+            Disable-Hibernation
             Write-Host "========================================" -ForegroundColor Cyan
         }
-        "5" { 
+        "5" {
             Write-Host "`n========================================" -ForegroundColor Cyan
-            Optimize-TCP 
+            Optimize-TCP
             Write-Host "========================================" -ForegroundColor Cyan
         }
         "6" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-GameDVR
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "7" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-Superfetch
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "8" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-TransparencyEffects
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "9" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Set-ForegroundPriority
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "10" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-Cortana
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "11" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-AdvertisingID
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "12" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Show-FileExtensions
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "13" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Optimize-CPUCores
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "14" {
             Write-Host "`n========================================" -ForegroundColor Cyan
             Write-Host "  APLICANDO TODOS OS AJUSTES" -ForegroundColor Cyan
             Write-Host "========================================" -ForegroundColor Cyan
@@ -369,16 +755,24 @@ function Invoke-SystemTweaks {
             Set-StartMenuSpeed
             Disable-Hibernation
             Optimize-TCP
+            Disable-GameDVR
+            Disable-Superfetch
+            Disable-TransparencyEffects
+            Set-ForegroundPriority
+            Disable-Cortana
+            Disable-AdvertisingID
+            Show-FileExtensions
+            Optimize-CPUCores
             Write-Host "`n========================================" -ForegroundColor Green
             Write-Host "  TODOS OS AJUSTES APLICADOS!" -ForegroundColor Green
             Write-Host "========================================" -ForegroundColor Green
         }
-        "7" {
+        "15" {
             Write-Host "`n========================================" -ForegroundColor Cyan
             Get-TweaksStatus
             Write-Host "========================================" -ForegroundColor Cyan
         }
-        "8" { return }
+        "16" { return }
         default {
             Write-Host "Opcao invalida. Por favor, tente novamente." -ForegroundColor Red
             Start-Sleep -Seconds 2

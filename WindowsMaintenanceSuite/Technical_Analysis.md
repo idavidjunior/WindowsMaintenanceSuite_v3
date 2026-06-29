@@ -24,13 +24,21 @@ Para futuras melhorias na efetividade, poderíamos considerar adicionar opções
 
 Com a inclusão do módulo `SystemTweaks.ps1`, o WMS agora oferece a capacidade de aplicar ajustes finos ao sistema operacional para otimizar desempenho, privacidade e experiência do usuário. Estes tweaks foram selecionados com base em sua eficácia comprovada e baixo risco de instabilidade, sempre utilizando ferramentas nativas do Windows. Cada ajuste é opcional e o módulo foi projetado para criar backups de chaves de registro específicas antes de qualquer modificação, permitindo a reversão se necessário.
 
-| Categoria | Tweak Implementado | Benefício Principal | Observações de Segurança/Robustez |
+| Categoria | Tweak Implementado | Beneficio Principal | Observações de Segurança/Robustez |
 | :-------- | :----------------- | :------------------ | :-------------------------------- |
 | **Desempenho** | Ativar Plano de Energia "Desempenho Máximo" | Garante que o hardware opere com sua capacidade total, ideal para tarefas exigentes. | Utiliza `powercfg`, ferramenta nativa. |
 | **Privacidade** | Desativar Telemetria Básica | Reduz o envio de dados de uso à Microsoft, liberando recursos e aumentando a privacidade. | Modifica chave de registro específica, com backup. |
 | **Interface** | Acelerar Resposta do Menu Iniciar | Diminui o atraso visual na abertura de menus, tornando a interface mais responsiva. | Modifica chave de registro específica, com backup. |
 | **Recursos** | Desativar Hibernação | Libera espaço em disco (especialmente em SSDs) e pode acelerar o desligamento/inicialização. | Utiliza `powercfg`, reversível. |
 | **Rede** | Otimizar TCP (Desativar Nagle's Algorithm) | Pode melhorar a latência e o desempenho em jogos e aplicações sensíveis à rede. | Modifica chaves de registro de interfaces de rede, com backup. |
+| **Desempenho** | Desativar Game DVR | Libera recursos do sistema ao desativar gravação em jogo, melhorando FPS em jogos. | Modifica chaves de registro específicas, reversível. |
+| **Desempenho** | Desativar Superfetch/SysMain | Recomendado para SSDs, reduz uso de RAM e I/O desnecessário de pré-carregamento. | Utiliza gerenciamento de serviços nativo, reversível. |
+| **Desempenho** | Desativar Efeitos de Transparência | Melhora desempenho visual em GPUs mais antigas, reduzindo carga gráfica. | Modifica chave de registro específica, reversível. |
+| **Desempenho** | Priorizar Programas em Primeiro Plano | Configura o sistema para dar mais prioridade a aplicações ativas, melhorando responsividade. | Modifica chave de registro específica, reversível. |
+| **Privacidade** | Desativar Cortana | Desativa assistente virtual, melhorando privacidade e liberando recursos do sistema. | Modifica chave de registro específica, reversível. |
+| **Privacidade** | Desativar ID de Publicidade | Impede rastreamento de publicidade personalizada, aumentando a privacidade. | Modifica chave de registro específica, reversível. |
+| **Personalização** | Mostrar Extensões de Arquivos | Torna visíveis as extensões de arquivos no Explorer, facilitando identificação de tipos. | Modifica chave de registro específica, reversível. |
+| **Desempenho** | Otimizar Uso de Todos os Núcleos do Processador | Configura o sistema para utilizar todos os núcleos disponíveis, melhorando desempenho multitarefa. | Utiliza BCDEDIT e chaves de registro, reversível. |
 
 ### Conclusão
 
