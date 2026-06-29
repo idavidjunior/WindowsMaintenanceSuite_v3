@@ -18,6 +18,7 @@
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\SmartDiagnostics.ps1"
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\RegistryBackupRestore.ps1"
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\SystemTweaks.ps1"
+. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\PerformanceMonitor.ps1"
 
 function Show-MainMenu {
     while ($true) {
@@ -34,7 +35,8 @@ function Show-MainMenu {
         Write-Host "  5. Backup do Registro"
         Write-Host "  6. Restaurar Registro (CUIDADO!)"
         Write-Host "  7. Ajustes de Sistema (Tweaks)"
-        Write-Host "  8. Sair"
+        Write-Host "  8. Monitor de Desempenho"
+        Write-Host "  9. Sair"
         Write-Host "`n========================================" -ForegroundColor Green
 
         $choice = Read-Host "Digite o numero da sua escolha"
@@ -91,6 +93,10 @@ function Show-MainMenu {
                 Wait-KeyPress
             }
             "8" {
+                Write-Log "Iniciando Monitor de Desempenho."
+                Invoke-PerformanceMonitor
+            }
+            "9" {
                 Write-Log "Saindo do Windows Maintenance Suite."
                 return
             }
