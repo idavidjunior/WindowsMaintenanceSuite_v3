@@ -1,3 +1,16 @@
+<#
+.SYNOPSIS
+    Módulo de diagnóstico profundo do sistema.
+.DESCRIPTION
+    Este módulo executa diagnóstico detalhado do hardware e sistema.
+#>
+
+# Importar SecurityHelper
+. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\SecurityHelper.ps1"
+
+# Validar privilégios de administrador
+Require-Administrator
+
 function Invoke-DeepDiagnostics {
     Write-Log "Iniciando Diagnostico Profundo..." "INFO"
     

@@ -3,6 +3,7 @@ WindowsMaintenanceSuite/Logs/*.log
 
 # Registry backups
 C:\WMS_RegistryBackups/
+**/WMS_RegistryBackups/
 
 # OS generated files
 .DS_Store

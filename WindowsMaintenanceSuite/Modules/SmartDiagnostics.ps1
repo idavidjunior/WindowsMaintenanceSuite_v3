@@ -1,3 +1,16 @@
+<#
+.SYNOPSIS
+    Módulo de diagnóstico SMART dos discos.
+.DESCRIPTION
+    Este módulo executa diagnóstico SMART dos discos físicos.
+#>
+
+# Importar SecurityHelper
+. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\SecurityHelper.ps1"
+
+# Validar privilégios de administrador
+Require-Administrator
+
 function Invoke-SmartDiagnostics {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "  DIAGNOSTICO SMART DOS DISCOS" -ForegroundColor Cyan

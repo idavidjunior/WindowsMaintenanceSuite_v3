@@ -10,6 +10,10 @@
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\Logger.ps1"
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\ConfigManager.ps1"
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\HealthEngine.ps1"
+. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\SecurityHelper.ps1"
+
+# Validar privilégios de administrador
+Require-Administrator
 
 # Importar módulos de Manutenção e Diagnóstico
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\EssentialMaintenance.ps1"
@@ -40,6 +44,13 @@ function Show-MainMenu {
         Write-Host "`n========================================" -ForegroundColor Green
 
         $choice = Read-Host "Digite o numero da sua escolha"
+
+        # Validar input
+        if (-not (Test-ValidNumericInput -Input $choice -Min 1 -Max 9)) {
+            Write-Host "Opcao invalida. Por favor, digite um numero entre 1 e 9." -ForegroundColor Red
+            Start-Sleep -Seconds 2
+            continue
+        }
 
         switch ($choice) {
             "1" {

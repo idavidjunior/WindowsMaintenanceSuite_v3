@@ -1,3 +1,16 @@
+<#
+.SYNOPSIS
+    Módulo de manutenção essencial do sistema.
+.DESCRIPTION
+    Este módulo executa tarefas básicas de manutenção do sistema Windows.
+#>
+
+# Importar SecurityHelper
+. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\SecurityHelper.ps1"
+
+# Validar privilégios de administrador
+Require-Administrator
+
 function Invoke-EssentialMaintenance {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "  MANUTENCAO ESSENCIAL" -ForegroundColor Cyan

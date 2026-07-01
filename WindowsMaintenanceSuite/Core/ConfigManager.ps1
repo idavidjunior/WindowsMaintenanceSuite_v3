@@ -3,20 +3,25 @@ $HistoryPath = Join-Path $PSScriptRoot "..\History\MaintenanceHistory.json"
 $ConfigDir = Join-Path $PSScriptRoot "..\Config"
 $HistoryDir = Join-Path $PSScriptRoot "..\History"
 
+# Configurações padrão com valores centralizados
+$DefaultConfig = @{
+    "Theme" = "Dark"
+    "AutoLogCleanup" = $true
+    "Language" = "PT-BR"
+    "ShowFullMacAddress" = $false  # Privacidade: mostrar MAC completo
+    "LogRetentionDays" = 7  # Dias para manter logs
+    "BackupPath" = ""  # Vazio usa caminho seguro automático
+}
+
 function Get-WMSConfig {
     # Garantir que o diretório existe
     if (-not (Test-Path $ConfigDir)) {
         New-Item -ItemType Directory -Path $ConfigDir -Force | Out-Null
     }
-    
+
     if (Test-Path $ConfigPath) {
         return Get-Content $ConfigPath | ConvertFrom-Json
     } else {
-        $DefaultConfig = @{
-            "Theme" = "Dark"
-            "AutoLogCleanup" = $true
-            "Language" = "PT-BR"
-        }
         $DefaultConfig | ConvertTo-Json | Set-Content $ConfigPath
         return $DefaultConfig
     }

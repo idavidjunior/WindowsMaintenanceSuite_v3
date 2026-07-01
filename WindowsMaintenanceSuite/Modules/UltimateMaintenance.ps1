@@ -1,3 +1,16 @@
+<#
+.SYNOPSIS
+    Módulo de manutenção completa do sistema.
+.DESCRIPTION
+    Este módulo executa tarefas avançadas de manutenção do sistema Windows.
+#>
+
+# Importar SecurityHelper
+. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\SecurityHelper.ps1"
+
+# Validar privilégios de administrador
+Require-Administrator
+
 function Invoke-UltimateMaintenance {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "  MANUTENCAO COMPLETA (ULTIMATE)" -ForegroundColor Cyan

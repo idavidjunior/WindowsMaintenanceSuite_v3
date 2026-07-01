@@ -6,6 +6,14 @@
     incluindo CPU, memória, disco, rede e processos.
 #>
 
+# Importar SecurityHelper
+. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\SecurityHelper.ps1"
+
+# Importar ConfigManager para obter configurações
+. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\ConfigManager.ps1"
+$config = Get-WMSConfig
+$ShowFullMacAddress = if ($config.ShowFullMacAddress) { $config.ShowFullMacAddress } else { $false }
+
 function Get-PerformanceReport {
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "  RELATÓRIO DE DESEMPENHO DO SISTEMA" -ForegroundColor Cyan
@@ -107,7 +115,8 @@ function Get-PerformanceReport {
             Write-Host "      Adaptador: $($adapter.Name)" -ForegroundColor White
             Write-Host "        Status: $($adapter.Status)" -ForegroundColor Green
             Write-Host "        Link Speed: $($adapter.LinkSpeed)" -ForegroundColor White
-            Write-Host "        MAC Address: $($adapter.MacAddress)" -ForegroundColor White
+            $maskedMac = Mask-MacAddress -MacAddress $adapter.MacAddress -ShowFull $ShowFullMacAddress
+            Write-Host "        MAC Address: $maskedMac" -ForegroundColor White
 
             # Estatísticas de interface
             $stats = Get-NetAdapterStatistics -Name $adapter.Name -ErrorAction SilentlyContinue
@@ -211,6 +220,13 @@ function Invoke-PerformanceMonitor {
     Write-Host "`n========================================" -ForegroundColor Cyan
 
     $choice = Read-Host "Digite o número da sua escolha"
+
+    # Validar input
+    if (-not (Test-ValidNumericInput -Input $choice -Min 1 -Max 3)) {
+        Write-Host "Opção inválida. Por favor, digite um número entre 1 e 3." -ForegroundColor Red
+        Start-Sleep -Seconds 2
+        return
+    }
 
     switch ($choice) {
         "1" {

@@ -6,16 +6,27 @@
     aumentando a segurança antes de operações críticas de manutenção.
 #>
 
+# Importar SecurityHelper
+. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\SecurityHelper.ps1"
+
+# Validar privilégios de administrador
+Require-Administrator
+
 function Backup-Registry {
     param (
-        [string]$BackupPath = "C:\WMS_RegistryBackups"
+        [string]$BackupPath = ""
     )
+
+    # Usar caminho seguro se não especificado
+    if ([string]::IsNullOrEmpty($BackupPath)) {
+        $BackupPath = Get-SafeBackupPath
+    }
 
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "  BACKUP DO REGISTRO" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "`n[1/4] Criando diretorio de backup..." -ForegroundColor Yellow
-    
+
     if (-not (Test-Path -Path $BackupPath)) {
         New-Item -ItemType Directory -Path $BackupPath -Force | Out-Null
         Write-Host "      [OK] Diretorio criado: $BackupPath" -ForegroundColor Green

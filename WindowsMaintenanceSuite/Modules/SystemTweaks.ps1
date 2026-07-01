@@ -6,26 +6,39 @@
     no Windows, com a opção de reverter as alterações.
 #>
 
+# Importar SecurityHelper
+. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\SecurityHelper.ps1"
+
+# Validar privilégios de administrador
+Require-Administrator
+
 # Função auxiliar para backup de chave de registro
 function Backup-RegistryKey {
     param (
         [string]$KeyPath,
         [string]$BackupName
     )
-    $BackupDir = "C:\WMS_RegistryBackups"
-    if (-not (Test-Path -Path $BackupDir)) {
-        New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null
-    }
-    $Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-    $BackupFile = Join-Path -Path $BackupDir -ChildPath "RegistryBackup_$(($KeyPath -replace '[\\/:]', '_') | ForEach-Object { $_.Replace(' ', '') })_$BackupName_$Timestamp.reg"
-    
     try {
-        reg export $KeyPath "$BackupFile" /y | Out-Null
-        Write-Host "Backup da chave de registro '$KeyPath' salvo em: $BackupFile" -ForegroundColor DarkGreen
-        return $BackupFile
+        $BackupDir = Get-SafeBackupPath
+        $Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+        $BackupFile = Join-Path -Path $BackupDir -ChildPath "RegistryBackup_$(($KeyPath -replace '[\\/:]', '_') | ForEach-Object { $_.Replace(' ', '') })_$BackupName_$Timestamp.reg"
+
+        if (Test-ExternalCommand "reg") {
+            $result = reg export $KeyPath "$BackupFile" /y 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "Backup da chave de registro '$KeyPath' salvo em: $BackupFile" -ForegroundColor DarkGreen
+                return $BackupFile
+            } else {
+                Write-Host "Erro ao fazer backup da chave de registro '$KeyPath': $(Get-SafeErrorMessage $result)" -ForegroundColor Red
+                return $null
+            }
+        } else {
+            Write-Host "Erro: Comando 'reg' não está disponível no sistema." -ForegroundColor Red
+            return $null
+        }
     }
     catch {
-        Write-Host "Erro ao fazer backup da chave de registro '$KeyPath': $_" -ForegroundColor Red
+        Write-Host "Erro ao fazer backup da chave de registro '$KeyPath': $(Get-SafeErrorMessage $_)" -ForegroundColor Red
         return $null
     }
 }
@@ -33,11 +46,32 @@ function Backup-RegistryKey {
 # 1. Tweak: Ativar Plano de Energia "Desempenho Maximo"
 function Set-HighPerformancePowerPlan {
     Write-Host "`n[1/5] Ativando Plano de Energia 'Desempenho Maximo'..." -ForegroundColor Yellow
+
+    # Salvar configuração atual para rollback
+    $originalScheme = $null
     try {
+        $originalScheme = powercfg /getactivescheme 2>&1
+    } catch {
+        # Continuar mesmo se não conseguir obter esquema atual
+    }
+
+    try {
+        if (-not (Test-ExternalCommand "powercfg")) {
+            Write-Host "      [ERRO] Comando 'powercfg' não está disponível no sistema." -ForegroundColor Red
+            Write-Log "Comando powercfg não encontrado." "ERROR"
+            return
+        }
+
         # Descobrir GUID do plano de Desempenho Maximo dinamicamente
-        $schemes = powercfg /list
+        $schemes = powercfg /list 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "      [ERRO] Não foi possível listar planos de energia: $(Get-SafeErrorMessage $schemes)" -ForegroundColor Red
+            Write-Log "Erro ao listar planos de energia." "ERROR"
+            return
+        }
+
         $highPerfGUID = $null
-        
+
         # Tenta encontrar "Desempenho Maximo" ou "Ultimate Performance"
         foreach ($line in $schemes) {
             if ($line -match "Desempenho [Mm][áa]ximo|Ultimate Performance|High Performance|Performance") {
@@ -47,28 +81,50 @@ function Set-HighPerformancePowerPlan {
                 }
             }
         }
-        
+
         if ($null -eq $highPerfGUID) {
             Write-Host "      [ERRO] Plano de Desempenho Maximo nao encontrado no sistema." -ForegroundColor Red
             Write-Log "Plano de Desempenho Maximo nao encontrado." "ERROR"
             return
         }
-        
+
         # Verifica se o plano ja esta ativo
-        $currentScheme = powercfg /getactivescheme
+        $currentScheme = powercfg /getactivescheme 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "      [ERRO] Não foi possível verificar plano ativo: $(Get-SafeErrorMessage $currentScheme)" -ForegroundColor Red
+            Write-Log "Erro ao verificar plano ativo." "ERROR"
+            return
+        }
+
         if ($currentScheme -match $highPerfGUID) {
             Write-Host "      [INFO] Plano de energia 'Desempenho Maximo' ja estava ativo." -ForegroundColor Cyan
             Write-Log "Plano de energia 'Desempenho Maximo' ja estava ativo." "INFO"
         } else {
-            # Tenta ativar o plano
-            powercfg /setactive $highPerfGUID | Out-Null
-            Write-Host "      [OK] Plano de energia 'Desempenho Maximo' ativado com sucesso (GUID: $highPerfGUID)." -ForegroundColor Green
-            Write-Log "Plano de energia 'Desempenho Maximo' ativado." "SUCCESS"
+            # Tenta ativar o plano com rollback em caso de falha
+            $result = Invoke-WithRollback -ScriptBlock {
+                powercfg /setactive $highPerfGUID 2>&1
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Falha ao ativar plano de energia"
+                }
+            } -RollbackScript {
+                if ($originalScheme -and $originalScheme -match '([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})') {
+                    $originalGUID = $matches[1]
+                    powercfg /setactive $originalGUID | Out-Null
+                }
+            }
+
+            if ($result) {
+                Write-Host "      [OK] Plano de energia 'Desempenho Maximo' ativado com sucesso (GUID: $highPerfGUID)." -ForegroundColor Green
+                Write-Log "Plano de energia 'Desempenho Maximo' ativado." "SUCCESS"
+            } else {
+                Write-Host "      [ERRO] Falha ao ativar plano. Rollback executado." -ForegroundColor Red
+                Write-Log "Erro ao ativar plano de energia. Rollback executado." "ERROR"
+            }
         }
     }
     catch {
-        Write-Host "      [ERRO] Erro ao ativar plano de energia: $_" -ForegroundColor Red
-        Write-Log "Erro ao ativar plano de energia: $_" "ERROR"
+        Write-Host "      [ERRO] Erro ao ativar plano de energia: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao ativar plano de energia." "ERROR"
     }
 }
 
@@ -337,17 +393,29 @@ function Optimize-CPUCores {
         Write-Host "      [INFO] Detectados $numberOfCores nucleos logicos." -ForegroundColor Cyan
 
         # Configurar para usar todos os nucleos no boot (via BCDEDIT)
-        try {
-            $currentBootConfig = bcdedit /enum current
-            if ($currentBootConfig -match "numproc") {
-                Write-Host "      [INFO] Limite de nucleos ja configurado no boot." -ForegroundColor Cyan
-            } else {
-                # Remover limite de nucleos se existir
-                bcdedit /deletevalue numproc | Out-Null
-                Write-Host "      [OK] Limite de nucleos removido do boot." -ForegroundColor Green
+        if (Test-ExternalCommand "bcdedit") {
+            try {
+                $currentBootConfig = bcdedit /enum current 2>&1
+                if ($LASTEXITCODE -eq 0) {
+                    if ($currentBootConfig -match "numproc") {
+                        Write-Host "      [INFO] Limite de nucleos ja configurado no boot." -ForegroundColor Cyan
+                    } else {
+                        # Remover limite de nucleos se existir
+                        $result = bcdedit /deletevalue numproc 2>&1
+                        if ($LASTEXITCODE -eq 0) {
+                            Write-Host "      [OK] Limite de nucleos removido do boot." -ForegroundColor Green
+                        } else {
+                            Write-Host "      [WARNING] Não foi possível remover limite de nucleos: $(Get-SafeErrorMessage $result)" -ForegroundColor Yellow
+                        }
+                    }
+                } else {
+                    Write-Host "      [WARNING] Não foi possível verificar configuracao de boot: $(Get-SafeErrorMessage $currentBootConfig)" -ForegroundColor Yellow
+                }
+            } catch {
+                Write-Host "      [WARNING] Erro ao acessar configuracao de boot: $(Get-SafeErrorMessage $_)" -ForegroundColor Yellow
             }
-        } catch {
-            Write-Host "      [INFO] Nao foi possivel verificar configuracao de boot (pode requerer privilegios adicionais)." -ForegroundColor Cyan
+        } else {
+            Write-Host "      [WARNING] Comando 'bcdedit' não está disponível. Pulando configuracao de boot." -ForegroundColor Yellow
         }
 
         # Otimizar agendamento de processador
@@ -366,8 +434,8 @@ function Optimize-CPUCores {
         Write-Log "Otimizacoes de CPU aplicadas." "SUCCESS"
     }
     catch {
-        Write-Host "      [ERRO] Erro ao otimizar nucleos do processador: $_" -ForegroundColor Red
-        Write-Log "Erro ao otimizar nucleos do processador: $_" "ERROR"
+        Write-Host "      [ERRO] Erro ao otimizar nucleos do processador: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao otimizar nucleos do processador." "ERROR"
     }
 }
 
@@ -679,6 +747,13 @@ function Invoke-SystemTweaks {
     Write-Host "`n========================================" -ForegroundColor Cyan
 
     $choice = Read-Host "Digite o numero da sua escolha"
+
+    # Validar input
+    if (-not (Test-ValidNumericInput -Input $choice -Min 1 -Max 16)) {
+        Write-Host "Opcao invalida. Por favor, digite um numero entre 1 e 16." -ForegroundColor Red
+        Start-Sleep -Seconds 2
+        return
+    }
 
     switch ($choice) {
         "1" {
