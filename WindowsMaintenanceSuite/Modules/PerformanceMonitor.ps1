@@ -221,6 +221,9 @@ function Invoke-PerformanceMonitor {
 
     $choice = Read-Host "Digite o número da sua escolha"
 
+    # Remover espaços em branco
+    $choice = $choice -replace '\s+', ''
+
     # Validar input
     if (-not (Test-ValidNumericInput -Input $choice -Min 1 -Max 3)) {
         Write-Host "Opção inválida. Por favor, digite um número entre 1 e 3." -ForegroundColor Red

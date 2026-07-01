@@ -45,6 +45,9 @@ function Show-MainMenu {
 
         $choice = Read-Host "Digite o numero da sua escolha"
 
+        # Remover espaços em branco
+        $choice = $choice -replace '\s+', ''
+
         # Validar input
         if (-not (Test-ValidNumericInput -Input $choice -Min 1 -Max 9)) {
             Write-Host "Opcao invalida. Por favor, digite um numero entre 1 e 9." -ForegroundColor Red
