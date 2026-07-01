@@ -753,35 +753,19 @@ function Get-TweaksStatus {
     # 1. Verificar Plano de Energia
     Write-Host "`n[1/13] Plano de Energia 'Desempenho Maximo':" -ForegroundColor Yellow
     try {
-        # Descobrir GUID do plano de Desempenho Maximo dinamicamente
-        $schemes = powercfg /list
-        $highPerfGUID = $null
-        
-        foreach ($line in $schemes) {
-            if ($line -match "Desempenho [Mm][áa]ximo|Ultimate Performance|High Performance") {
-                if ($line -match '([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})') {
-                    $highPerfGUID = $matches[1]
-                    break
-                }
-            }
-        }
-        
-        if ($null -eq $highPerfGUID) {
+        $highPerfGUID = Get-HighPerformancePlanGuid
+
+        if ([string]::IsNullOrWhiteSpace($highPerfGUID)) {
             Write-Host "      [ERRO] Plano de Desempenho Maximo nao encontrado no sistema." -ForegroundColor Red
         } else {
-            # Verifica se o plano atual e o de desempenho maximo
-            $currentScheme = powercfg /getactivescheme
-            if ($currentScheme -match $highPerfGUID) {
+            $currentScheme = powercfg /getactivescheme 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "      [ERRO] Nao foi possivel verificar o plano de energia." -ForegroundColor Red
+            } elseif ($currentScheme -match [regex]::Escape($highPerfGUID)) {
                 Write-Host "      [ATIVO] Plano de Desempenho Maximo esta ativo (GUID: $highPerfGUID)." -ForegroundColor Green
                 $appliedCount++
             } else {
-                # Extrair GUID do plano atual
-                if ($currentScheme -match '([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})') {
-                    $currentPlan = $matches[1]
-                    Write-Host "      [INATIVO] Plano atual: $currentPlan (Desempenho Maximo: $highPerfGUID)" -ForegroundColor Red
-                } else {
-                    Write-Host "      [INATIVO] Plano atual diferente de Desempenho Maximo." -ForegroundColor Red
-                }
+                Write-Host "      [INATIVO] Plano atual diferente de Desempenho Maximo." -ForegroundColor Red
             }
         }
     } catch {
