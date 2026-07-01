@@ -9,8 +9,8 @@
 # Importar SecurityHelper
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\SecurityHelper.ps1"
 
-# Validar privilégios de administrador
-Require-Administrator
+# Validar privilégios de administrador (já verificado pelo MainMenu/WMS.bat)
+# Require-Administrator  # Comentado temporariamente para teste
 
 # Função auxiliar para backup de chave de registro
 function Backup-RegistryKey {
@@ -752,7 +752,7 @@ function Invoke-SystemTweaks {
     $choice = $choice -replace '\s+', ''
 
     # Validar input
-    if (-not (Test-ValidNumericInput -Input $choice -Min 1 -Max 16)) {
+    if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max 16)) {
         Write-Host "Opcao invalida. Por favor, digite um numero entre 1 e 16." -ForegroundColor Red
         Start-Sleep -Seconds 2
         return

@@ -61,13 +61,24 @@ function Backup-Registry {
             return $false
         }
         
-        # Criar arquivo combinado
+        # Criar arquivo combinado sem cabeçalhos duplicados
         Write-Host "`n[4/4] Combinando arquivos de backup..." -ForegroundColor Yellow
+        $hklmContent = Get-Content $BackupFileHKLM
+        $hkcuContent = Get-Content $BackupFileHKCU
+
+        # Se ambos os arquivos tiverem cabeçalho, mantenha apenas o primeiro
+        if ($hkcuContent.Count -gt 0 -and $hkcuContent[0] -match '^Windows Registry Editor Version') {
+            $hkcuContent = $hkcuContent | Select-Object -Skip 1
+        }
+        if ($hkcuContent.Count -gt 0 -and $hkcuContent[0] -eq '') {
+            $hkcuContent = $hkcuContent | Select-Object -Skip 1
+        }
+
         $CombinedContent = @()
-        $CombinedContent += Get-Content $BackupFileHKLM
-        $CombinedContent += Get-Content $BackupFileHKCU
-        $CombinedContent | Out-File -FilePath $BackupFile -Encoding UTF8
-        
+        $CombinedContent += $hklmContent
+        $CombinedContent += $hkcuContent
+        $CombinedContent | Out-File -FilePath $BackupFile -Encoding Unicode
+
         # Remover arquivos temporarios
         Remove-Item $BackupFileHKLM -Force -ErrorAction SilentlyContinue
         Remove-Item $BackupFileHKCU -Force -ErrorAction SilentlyContinue

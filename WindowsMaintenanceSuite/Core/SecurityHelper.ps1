@@ -119,25 +119,25 @@ function Mask-MacAddress {
 function Test-ValidNumericInput {
     <#
     .SYNOPSIS
-        Valida se input é numérico e está dentro de um range.
-    .PARAMETER Input
-        Input a validar.
+        Valida se um valor é numérico e está dentro de um range.
+    .PARAMETER Value
+        Valor a validar.
     .PARAMETER Min
         Valor mínimo permitido.
     .PARAMETER Max
         Valor máximo permitido.
     .OUTPUTS
-        Boolean indicando se input é válido.
+        Boolean indicando se o valor é válido.
     #>
     param (
         [Parameter(Mandatory=$true)]
-        $Input,
+        $Value,
         [int]$Min = [int]::MinValue,
         [int]$Max = [int]::MaxValue
     )
 
     # Remover espaços em branco
-    $cleanedInput = $Input -replace '\s+', ''
+    $cleanedInput = $Value -replace '\s+', ''
 
     try {
         $numeric = [int]$cleanedInput

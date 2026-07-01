@@ -12,7 +12,7 @@
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\HealthEngine.ps1"
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\SecurityHelper.ps1"
 
-# Validar privilégios de administrador
+# Validar privilégios de administrador (já verificado pelo WMS.bat, mas garantindo)
 Require-Administrator
 
 # Importar módulos de Manutenção e Diagnóstico
@@ -49,7 +49,9 @@ function Show-MainMenu {
         $choice = $choice -replace '\s+', ''
 
         # Validar input
-        if (-not (Test-ValidNumericInput -Input $choice -Min 1 -Max 9)) {
+        $isValid = Test-ValidNumericInput -Value $choice -Min 1 -Max 9
+
+        if (-not $isValid) {
             Write-Host "Opcao invalida. Por favor, digite um numero entre 1 e 9." -ForegroundColor Red
             Start-Sleep -Seconds 2
             continue
@@ -83,8 +85,13 @@ function Show-MainMenu {
             }
             "6" {
                 Write-Log "Iniciando Restauracao do Registro."
-                $backupFiles = Get-ChildItem -Path "C:\WMS_RegistryBackups" -Filter "RegistryBackup_*.reg" | Select-Object -ExpandProperty FullName
-                if ($backupFiles.Count -gt 0) {
+                $backupPath = Get-SafeBackupPath
+                $backupFiles = @()
+                if (Test-Path -Path $backupPath) {
+                    $backupFiles = Get-ChildItem -Path $backupPath -Filter "RegistryBackup_*.reg" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
+                }
+
+                if ($backupFiles -and $backupFiles.Count -gt 0) {
                     Write-Host "`nBackups de Registro disponiveis:" -ForegroundColor Yellow
                     for ($i = 0; $i -lt $backupFiles.Count; $i++) {
                         $backupSize = [Math]::Round((Get-Item $backupFiles[$i]).Length / 1MB, 2)
