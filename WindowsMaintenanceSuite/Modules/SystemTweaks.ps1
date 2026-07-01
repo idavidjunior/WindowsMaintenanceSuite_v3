@@ -9,8 +9,206 @@
 # Importar SecurityHelper
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\SecurityHelper.ps1"
 
+# Importar Logger para registro de eventos
+. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\Logger.ps1"
+
 # Validar privilégios de administrador (já verificado pelo MainMenu/WMS.bat)
 # Require-Administrator  # Comentado temporariamente para teste
+
+function Get-HighPerformancePlanGuid {
+    try {
+        if (-not (Test-ExternalCommand "powercfg")) {
+            return $null
+        }
+
+        $schemes = @(powercfg /list 2>$null)
+        foreach ($line in $schemes) {
+            $trimmed = [string]$line
+            $guidMatch = [regex]::Match($trimmed, '([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})')
+            if ($guidMatch.Success -and $trimmed -match '(?i)(desempenho|ultimate|high|performance)') {
+                return $guidMatch.Groups[1].Value
+            }
+        }
+    } catch {
+        return $null
+    }
+
+    return $null
+}
+
+function Test-HighPerformancePowerPlanActive {
+    try {
+        $guid = Get-HighPerformancePlanGuid
+        if ([string]::IsNullOrWhiteSpace($guid)) { return $false }
+        $currentScheme = powercfg /getactivescheme 2>$null
+        return $currentScheme -match $guid
+    } catch {
+        return $false
+    }
+}
+
+function Test-TelemetryDisabled {
+    try {
+        $keyPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection"
+        if (-not (Test-Path $keyPath)) { return $false }
+        $value = (Get-ItemProperty -Path $keyPath -Name "AllowTelemetry" -ErrorAction SilentlyContinue).AllowTelemetry
+        return $value -eq 0
+    } catch {
+        return $false
+    }
+}
+
+function Test-StartMenuSpeedConfigured {
+    try {
+        $keyPath = "HKCU:\Control Panel\Desktop"
+        $value = (Get-ItemProperty -Path $keyPath -Name "MenuShowDelay" -ErrorAction SilentlyContinue).MenuShowDelay
+        return $value -eq 100
+    } catch {
+        return $false
+    }
+}
+
+function Test-HibernationDisabled {
+    try {
+        return -not (Test-Path "$env:SystemDrive\hiberfil.sys")
+    } catch {
+        return $false
+    }
+}
+
+function Test-TcpOptimized {
+    try {
+        $keyPath = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"
+        if (-not (Test-Path $keyPath)) { return $false }
+        $interfaces = Get-ChildItem -Path $keyPath -ErrorAction SilentlyContinue
+        if (-not $interfaces) { return $false }
+
+        $optimizedCount = 0
+        foreach ($interface in $interfaces) {
+            $interfaceKey = $interface.PSPath
+            $noDelay = (Get-ItemProperty -Path $interfaceKey -Name "TcpNoDelay" -ErrorAction SilentlyContinue).TcpNoDelay
+            $ackFreq = (Get-ItemProperty -Path $interfaceKey -Name "TcpAckFrequency" -ErrorAction SilentlyContinue).TcpAckFrequency
+            if ($noDelay -eq 1 -and $ackFreq -eq 1) { $optimizedCount++ }
+        }
+
+        return $optimizedCount -gt 0
+    } catch {
+        return $false
+    }
+}
+
+function Test-GameDVRDisabled {
+    try {
+        $keyPath = "HKCU:\System\GameConfigStore"
+        $value = (Get-ItemProperty -Path $keyPath -Name "GameDVR_Enabled" -ErrorAction SilentlyContinue).GameDVR_Enabled
+        return $value -eq 0
+    } catch {
+        return $false
+    }
+}
+
+function Test-SuperfetchDisabled {
+    try {
+        $service = Get-Service -Name "SysMain" -ErrorAction SilentlyContinue
+        if (-not $service) { return $false }
+        return $service.StartType -eq "Disabled"
+    } catch {
+        return $false
+    }
+}
+
+function Test-TransparencyDisabled {
+    try {
+        $keyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+        $value = (Get-ItemProperty -Path $keyPath -Name "EnableTransparency" -ErrorAction SilentlyContinue).EnableTransparency
+        return $value -eq 0
+    } catch {
+        return $false
+    }
+}
+
+function Test-ForegroundPriorityConfigured {
+    try {
+        $keyPath = "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl"
+        $value = (Get-ItemProperty -Path $keyPath -Name "Win32PrioritySeparation" -ErrorAction SilentlyContinue).Win32PrioritySeparation
+        return $value -eq 38
+    } catch {
+        return $false
+    }
+}
+
+function Test-CortanaDisabled {
+    try {
+        $keyPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search"
+        if (-not (Test-Path $keyPath)) { return $false }
+        $value = (Get-ItemProperty -Path $keyPath -Name "AllowCortana" -ErrorAction SilentlyContinue).AllowCortana
+        return $value -eq 0
+    } catch {
+        return $false
+    }
+}
+
+function Test-AdvertisingIdDisabled {
+    try {
+        $keyPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo"
+        $value = (Get-ItemProperty -Path $keyPath -Name "Enabled" -ErrorAction SilentlyContinue).Enabled
+        return $value -eq 0
+    } catch {
+        return $false
+    }
+}
+
+function Test-FileExtensionsVisible {
+    try {
+        $keyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        $value = (Get-ItemProperty -Path $keyPath -Name "HideFileExt" -ErrorAction SilentlyContinue).HideFileExt
+        return $value -eq 0
+    } catch {
+        return $false
+    }
+}
+
+function Test-CpuCoreOptimizationConfigured {
+    return Test-ForegroundPriorityConfigured
+}
+
+function Write-TweakMenuOption {
+    param (
+        [int]$Index,
+        [string]$Label,
+        [bool]$Applied
+    )
+
+    $statusText = if ($Applied) { " [OK]" } else { " [ ]" }
+    $color = if ($Applied) { "Green" } else { "White" }
+    Write-Host ("  {0}. {1}{2}" -f $Index, $Label, $statusText) -ForegroundColor $color
+}
+
+function Show-TweaksMenu {
+    Write-Host "`n========================================" -ForegroundColor Cyan
+    Write-Host "  AJUSTES DE SISTEMA (TWEAKS)" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "`nSelecione os ajustes que deseja aplicar:" -ForegroundColor Cyan
+
+    Write-TweakMenuOption -Index 1 -Label "Ativar Plano de Energia 'Desempenho Maximo'" -Applied (Test-HighPerformancePowerPlanActive)
+    Write-TweakMenuOption -Index 2 -Label "Desativar Telemetria Basica" -Applied (Test-TelemetryDisabled)
+    Write-TweakMenuOption -Index 3 -Label "Acelerar Resposta do Menu Iniciar" -Applied (Test-StartMenuSpeedConfigured)
+    Write-TweakMenuOption -Index 4 -Label "Desativar Hibernacao (Libera espaco em disco)" -Applied (Test-HibernationDisabled)
+    Write-TweakMenuOption -Index 5 -Label "Otimizar TCP (Desativar Nagle's Algorithm)" -Applied (Test-TcpOptimized)
+    Write-TweakMenuOption -Index 6 -Label "Desativar Game DVR (Libera recursos do sistema)" -Applied (Test-GameDVRDisabled)
+    Write-TweakMenuOption -Index 7 -Label "Desativar Superfetch/SysMain (Recomendado para SSDs)" -Applied (Test-SuperfetchDisabled)
+    Write-TweakMenuOption -Index 8 -Label "Desativar efeitos de transparencia (Melhora desempenho visual)" -Applied (Test-TransparencyDisabled)
+    Write-TweakMenuOption -Index 9 -Label "Priorizar programas em primeiro plano" -Applied (Test-ForegroundPriorityConfigured)
+    Write-TweakMenuOption -Index 10 -Label "Desativar Cortana (Privacidade e desempenho)" -Applied (Test-CortanaDisabled)
+    Write-TweakMenuOption -Index 11 -Label "Desativar ID de publicidade (Privacidade)" -Applied (Test-AdvertisingIdDisabled)
+    Write-TweakMenuOption -Index 12 -Label "Mostrar extensoes de arquivos (Personalizacao)" -Applied (Test-FileExtensionsVisible)
+    Write-TweakMenuOption -Index 13 -Label "Otimizar uso de todos os nucleos do processador" -Applied (Test-CpuCoreOptimizationConfigured)
+    Write-TweakMenuOption -Index 14 -Label "Aplicar TODOS os ajustes acima" -Applied $false
+    Write-TweakMenuOption -Index 15 -Label "Verificar status dos tweaks aplicados" -Applied $false
+    Write-TweakMenuOption -Index 16 -Label "Voltar ao Menu Principal" -Applied $false
+
+    Write-Host "`n========================================" -ForegroundColor Cyan
+}
 
 # Função auxiliar para backup de chave de registro
 function Backup-RegistryKey {
@@ -62,22 +260,21 @@ function Set-HighPerformancePowerPlan {
             return
         }
 
-        # Descobrir GUID do plano de Desempenho Maximo dinamicamente
-        $schemes = powercfg /list 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "      [ERRO] Não foi possível listar planos de energia: $(Get-SafeErrorMessage $schemes)" -ForegroundColor Red
-            Write-Log "Erro ao listar planos de energia." "ERROR"
-            return
-        }
+        $highPerfGUID = Get-HighPerformancePlanGuid
+        if ([string]::IsNullOrWhiteSpace($highPerfGUID)) {
+            $schemes = powercfg /list 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "      [ERRO] Não foi possível listar planos de energia: $(Get-SafeErrorMessage $schemes)" -ForegroundColor Red
+                Write-Log "Erro ao listar planos de energia." "ERROR"
+                return
+            }
 
-        $highPerfGUID = $null
-
-        # Tenta encontrar "Desempenho Maximo" ou "Ultimate Performance"
-        foreach ($line in $schemes) {
-            if ($line -match "Desempenho [Mm][áa]ximo|Ultimate Performance|High Performance|Performance") {
-                if ($line -match '([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})') {
-                    $highPerfGUID = $matches[1]
-                    break
+            foreach ($line in $schemes) {
+                if ($line -match '(?i)(desempenho|ultimate|high).*(performance|maximo|maximo|maximum)') {
+                    if ($line -match '([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})') {
+                        $highPerfGUID = $matches[1]
+                        break
+                    }
                 }
             }
         }
@@ -99,26 +296,17 @@ function Set-HighPerformancePowerPlan {
         if ($currentScheme -match $highPerfGUID) {
             Write-Host "      [INFO] Plano de energia 'Desempenho Maximo' ja estava ativo." -ForegroundColor Cyan
             Write-Log "Plano de energia 'Desempenho Maximo' ja estava ativo." "INFO"
+        } elseif (-not (Test-Administrator)) {
+            Write-Host "      [WARNING] Plano encontrado, mas a ativação exige privilégios de administrador." -ForegroundColor Yellow
+            Write-Log "Plano encontrado, mas a ativação exige privilégios de administrador." "WARNING"
         } else {
-            # Tenta ativar o plano com rollback em caso de falha
-            $result = Invoke-WithRollback -ScriptBlock {
-                powercfg /setactive $highPerfGUID 2>&1
-                if ($LASTEXITCODE -ne 0) {
-                    throw "Falha ao ativar plano de energia"
-                }
-            } -RollbackScript {
-                if ($originalScheme -and $originalScheme -match '([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})') {
-                    $originalGUID = $matches[1]
-                    powercfg /setactive $originalGUID | Out-Null
-                }
-            }
-
-            if ($result) {
+            $result = powercfg /setactive $highPerfGUID 2>&1
+            if ($LASTEXITCODE -eq 0) {
                 Write-Host "      [OK] Plano de energia 'Desempenho Maximo' ativado com sucesso (GUID: $highPerfGUID)." -ForegroundColor Green
                 Write-Log "Plano de energia 'Desempenho Maximo' ativado." "SUCCESS"
             } else {
-                Write-Host "      [ERRO] Falha ao ativar plano. Rollback executado." -ForegroundColor Red
-                Write-Log "Erro ao ativar plano de energia. Rollback executado." "ERROR"
+                Write-Host "      [ERRO] Falha ao ativar plano. Verifique privilégios de administrador." -ForegroundColor Red
+                Write-Log "Erro ao ativar plano de energia. Verifique privilégios de administrador." "ERROR"
             }
         }
     }
@@ -439,6 +627,121 @@ function Optimize-CPUCores {
     }
 }
 
+function Is-TweakApplied {
+    param (
+        [Parameter(Mandatory=$true)]
+        [int]$TweakNumber
+    )
+
+    switch ($TweakNumber) {
+        1 {
+            $schemes = powercfg /list 2>&1
+            if ($LASTEXITCODE -ne 0) { return $false }
+            $highPerfGUID = $null
+            foreach ($line in $schemes) {
+                if ($line -match 'Desempenho [Mm][áa]ximo|Ultimate Performance|High Performance|Performance') {
+                    if ($line -match '([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})') {
+                        $highPerfGUID = $matches[1]
+                        break
+                    }
+                }
+            }
+            if (-not $highPerfGUID) { return $false }
+            $currentScheme = powercfg /getactivescheme 2>&1
+            if ($LASTEXITCODE -ne 0) { return $false }
+            return $currentScheme -match [regex]::Escape($highPerfGUID)
+        }
+        2 {
+            $keyPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection'
+            $valueName = 'AllowTelemetry'
+            $value = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+            return ($value -eq 0)
+        }
+        3 {
+            $keyPath = 'HKCU:\Control Panel\Desktop'
+            $valueName = 'MenuShowDelay'
+            $value = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+            return ($value -eq 100)
+        }
+        4 {
+            return -not (Test-Path "$env:SystemDrive\hiberfil.sys")
+        }
+        5 {
+            $keyPath = 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces'
+            $interfaces = Get-ChildItem -Path $keyPath -ErrorAction SilentlyContinue
+            foreach ($interface in $interfaces) {
+                $props = Get-ItemProperty -Path $interface.PSPath -ErrorAction SilentlyContinue
+                if ($props.TcpNoDelay -eq 1 -and $props.TcpAckFrequency -eq 1) {
+                    return $true
+                }
+            }
+            return $false
+        }
+        6 {
+            $keyPath = 'HKCU:\System\GameConfigStore'
+            $valueName = 'GameDVR_Enabled'
+            $value = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+            return ($value -eq 0)
+        }
+        7 {
+            $service = Get-Service -Name 'SysMain' -ErrorAction SilentlyContinue
+            return ($service -and $service.StartType -eq 'Disabled')
+        }
+        8 {
+            $keyPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+            $valueName = 'EnableTransparency'
+            $value = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+            return ($value -eq 0)
+        }
+        9 {
+            $keyPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl'
+            $valueName = 'Win32PrioritySeparation'
+            $value = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+            return ($value -eq 38)
+        }
+        10 {
+            $keyPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search'
+            $valueName = 'AllowCortana'
+            $value = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+            return ($value -eq 0)
+        }
+        11 {
+            $keyPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo'
+            $valueName = 'Enabled'
+            $value = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+            return ($value -eq 0)
+        }
+        12 {
+            $keyPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+            $valueName = 'HideFileExt'
+            $value = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+            return ($value -eq 0)
+        }
+        13 {
+            $keyPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl'
+            $valueName = 'Win32PrioritySeparation'
+            $priorityValue = (Get-ItemProperty -Path $keyPath -Name $valueName -ErrorAction SilentlyContinue).$valueName
+            $bootConfig = bcdedit /enum current 2>&1
+            if ($LASTEXITCODE -ne 0) { return $false }
+            $numprocLimited = $bootConfig -match 'numproc'
+            return ($priorityValue -eq 38 -and -not $numprocLimited)
+        }
+        default { return $false }
+    }
+}
+
+function Get-TweakStatusLabel {
+    param (
+        [Parameter(Mandatory=$true)]
+        [int]$TweakNumber
+    )
+
+    if (Is-TweakApplied -TweakNumber $TweakNumber) {
+        return ' [OK]'
+    }
+    return ''
+}
+
 function Get-TweaksStatus {
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "  STATUS DOS TWEAKS APLICADOS" -ForegroundColor Cyan
@@ -724,27 +1027,7 @@ function Get-TweaksStatus {
 }
 
 function Invoke-SystemTweaks {
-    Write-Host "`n========================================" -ForegroundColor Cyan
-    Write-Host "  AJUSTES DE SISTEMA (TWEAKS)" -ForegroundColor Cyan
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "`nSelecione os ajustes que deseja aplicar:"
-    Write-Host "  1. Ativar Plano de Energia 'Desempenho Maximo'"
-    Write-Host "  2. Desativar Telemetria Basica"
-    Write-Host "  3. Acelerar Resposta do Menu Iniciar"
-    Write-Host "  4. Desativar Hibernacao (Libera espaco em disco)"
-    Write-Host "  5. Otimizar TCP (Desativar Nagle's Algorithm)"
-    Write-Host "  6. Desativar Game DVR (Libera recursos do sistema)"
-    Write-Host "  7. Desativar Superfetch/SysMain (Recomendado para SSDs)"
-    Write-Host "  8. Desativar efeitos de transparencia (Melhora desempenho visual)"
-    Write-Host "  9. Priorizar programas em primeiro plano"
-    Write-Host "  10. Desativar Cortana (Privacidade e desempenho)"
-    Write-Host "  11. Desativar ID de publicidade (Privacidade)"
-    Write-Host "  12. Mostrar extensoes de arquivos (Personalizacao)"
-    Write-Host "  13. Otimizar uso de todos os nucleos do processador"
-    Write-Host "  14. Aplicar TODOS os ajustes acima"
-    Write-Host "  15. Verificar status dos tweaks aplicados"
-    Write-Host "  16. Voltar ao Menu Principal"
-    Write-Host "`n========================================" -ForegroundColor Cyan
+    Show-TweaksMenu
 
     $choice = Read-Host "Digite o numero da sua escolha"
 

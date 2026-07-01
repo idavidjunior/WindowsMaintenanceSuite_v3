@@ -8,7 +8,7 @@ function Write-Log {
     )
 
     # Importar ConfigManager para obter configurações
-    . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\ConfigManager.ps1"
+    . "$PSScriptRoot\ConfigManager.ps1"
     $config = Get-WMSConfig
     $retentionDays = if ($config.LogRetentionDays) { $config.LogRetentionDays } else { 7 }
 
