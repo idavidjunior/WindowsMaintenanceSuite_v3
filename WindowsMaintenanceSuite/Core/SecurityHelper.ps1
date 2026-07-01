@@ -135,9 +135,12 @@ function Test-ValidNumericInput {
         [int]$Min = [int]::MinValue,
         [int]$Max = [int]::MaxValue
     )
-    
+
+    # Remover espaços em branco
+    $cleanedInput = $Input -replace '\s+', ''
+
     try {
-        $numeric = [int]$Input
+        $numeric = [int]$cleanedInput
         return ($numeric -ge $Min -and $numeric -le $Max)
     } catch {
         return $false
