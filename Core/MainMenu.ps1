@@ -32,6 +32,7 @@ Require-Administrator
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\SystemLightweight.ps1"
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\DriverManager.ps1"
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\SecurityScan.ps1"
+. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\RegistryScanner.ps1"
 
 function Show-MainMenu {
     while ($true) {
@@ -58,7 +59,8 @@ function Show-MainMenu {
         Write-Host " 11. Restaurar Registro (CUIDADO!)"
         Write-Host " 12. Manutencao Agendada"
         Write-Host " 13. Verificacao de Virus (Windows Defender)"
-        Write-Host " 14. Sair"
+        Write-Host " 14. Varredura e Limpeza do Registro"
+        Write-Host " 15. Sair"
         Write-Host "`n========================================" -ForegroundColor Green
 
         $choice = Read-Host "Digite o numero da sua escolha"
@@ -67,10 +69,10 @@ function Show-MainMenu {
         $choice = $choice -replace '\s+', ''
 
         # Validar input
-        $isValid = Test-ValidNumericInput -Value $choice -Min 1 -Max 14
+        $isValid = Test-ValidNumericInput -Value $choice -Min 1 -Max 15
 
         if (-not $isValid) {
-            Write-Host "Opcao invalida. Por favor, digite um numero entre 1 e 14." -ForegroundColor Red
+            Write-Host "Opcao invalida. Por favor, digite um numero entre 1 e 15." -ForegroundColor Red
             Start-Sleep -Seconds 2
             continue
         }
@@ -161,6 +163,11 @@ function Show-MainMenu {
                 Wait-KeyPress
             }
             "14" {
+                Write-Log "Iniciando Varredura e Limpeza do Registro."
+                Invoke-RegistryScan
+                Wait-KeyPress
+            }
+            "15" {
                 Write-Log "Saindo do Windows Maintenance Suite."
                 return
             }
