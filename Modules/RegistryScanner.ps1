@@ -141,7 +141,7 @@ function Get-RegistryJunkReport {
                             if (& $cat.Check $key) {
                                 $findings.Add([PSCustomObject]@{
                                     Category  = $cat.Name
-                                    KeyPath   = $key.PSPath -replace '^Microsoft\.PowerShell\.Core\\Registry::', ''
+                                    KeyPath   = ($key.PSPath -replace '^Microsoft\.PowerShell\.Core\\Registry::', '')
                                     ValueName = $null
                                     Detail    = $key.PSChildName
                                 })
