@@ -46,6 +46,10 @@ $modRoot = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Definition) '..
 . (Join-Path $modRoot 'SecurityScan.ps1')
 . (Join-Path $modRoot 'RegistryScanner.ps1')
 . (Join-Path $modRoot 'QuickTools.ps1')
+. (Join-Path $modRoot 'SelfUpdate.ps1')
+. (Join-Path $modRoot 'PackageManager.ps1')
+. (Join-Path $modRoot 'Profiles.ps1')
+. (Join-Path $modRoot 'Hardening.ps1')
 
 # Verificação rápida de carregamento
 if (-not (Get-Command Invoke-RegistryScan -ErrorAction SilentlyContinue)) {
@@ -53,6 +57,27 @@ if (-not (Get-Command Invoke-RegistryScan -ErrorAction SilentlyContinue)) {
     pause
     exit 1
 }
+if (-not (Get-Command Update-WMS -ErrorAction SilentlyContinue)) {
+    Write-Error "Falha ao carregar o módulo SelfUpdate (Update-WMS não encontrado)."
+    pause
+    exit 1
+}
+if (-not (Get-Command Install-App -ErrorAction SilentlyContinue)) {
+    Write-Error "Falha ao carregar o módulo PackageManager (Install-App não encontrado)."
+    pause
+    exit 1
+}
+if (-not (Get-Command Set-WMSProfile -ErrorAction SilentlyContinue)) {
+    Write-Error "Falha ao carregar o módulo Profiles (Set-WMSProfile não encontrado)."
+    pause
+    exit 1
+}
+if (-not (Get-Command Invoke-Hardening -ErrorAction SilentlyContinue)) {
+    Write-Error "Falha ao carregar o módulo Hardening (Invoke-Hardening não encontrado)."
+    pause
+    exit 1
+}
+
 
 function Show-MainMenu {
     while ($true) {
@@ -81,7 +106,11 @@ function Show-MainMenu {
         Write-Host " 13. Verificacao de Virus (Windows Defender)"
         Write-Host " 14. Varredura e Limpeza do Registro"
         Write-Host " 15. Ferramentas Nativas do Windows (defrag, servicos, MRT, etc.)"
-        Write-Host " 16. Sair"
+        Write-Host " 16. Atualizacao Automatica (Self-Update)"
+        Write-Host " 17. Gerenciador de Pacotes (WinGet/Choco/Scoop)"
+        Write-Host " 18. Perfis de Otimizacao (Gamer/Dev/Server/Battery)"
+        Write-Host " 19. Hardening de Seguranca (Baseline/Strict)"
+        Write-Host " 20. Sair"
         Write-Host "`n========================================" -ForegroundColor Green
 
         $choice = Read-Host "Digite o numero da sua escolha"
@@ -90,10 +119,10 @@ function Show-MainMenu {
         $choice = $choice -replace '\s+', ''
 
         # Validar input
-        $isValid = Test-ValidNumericInput -Value $choice -Min 1 -Max 16
+        $isValid = Test-ValidNumericInput -Value $choice -Min 1 -Max 20
 
         if (-not $isValid) {
-            Write-Host "Opcao invalida. Por favor, digite um numero entre 1 e 16." -ForegroundColor Red
+            Write-Host "Opcao invalida. Por favor, digite um numero entre 1 e 20." -ForegroundColor Red
             Start-Sleep -Seconds 2
             continue
         }
@@ -194,6 +223,26 @@ function Show-MainMenu {
                 Wait-KeyPress
             }
             "16" {
+                Write-Log "Iniciando Auto-Atualizacao."
+                Update-WMS
+                Wait-KeyPress
+            }
+            "17" {
+                Write-Log "Abrindo Gerenciador de Pacotes."
+                Invoke-PackageManagerMenu
+                Wait-KeyPress
+            }
+            "18" {
+                Write-Log "Aplicando Perfil de Otimizacao."
+                Invoke-ProfileMenu
+                Wait-KeyPress
+            }
+            "19" {
+                Write-Log "Executando Hardening de Seguranca."
+                Invoke-HardeningMenu
+                Wait-KeyPress
+            }
+            "20" {
                 Write-Log "Saindo do Windows Maintenance Suite."
                 return
             }
@@ -201,6 +250,77 @@ function Show-MainMenu {
                 Write-Host "Opcao invalida. Por favor, tente novamente." -ForegroundColor Red
                 Start-Sleep -Seconds 2
             }
+        }
+    }
+}
+
+function Invoke-PackageManagerMenu {
+    while ($true) {
+        Clear-Host
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  GERENCIADOR DE PACOTES" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "`n  1. Instalar aplicativo (informar ID)"
+        Write-Host "  2. Atualizar todos os pacotes"
+        Write-Host "  3. Remover bloatware padrão"
+        Write-Host "  4. Voltar"
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        $c = Read-Host "Escolha"
+        $c = $c -replace '\s+',''
+        switch ($c) {
+            "1" { $id = Read-Host "ID do pacote (ex: Microsoft.VSCode)"; Install-App -Id $id; Wait-KeyPress }
+            "2" { Update-AllApps; Wait-KeyPress }
+            "3" { Uninstall-Bloat; Wait-KeyPress }
+            "4" { return }
+            default { Write-Host "Opção inválida." -ForegroundColor Red; Start-Sleep 1 }
+        }
+    }
+}
+
+function Invoke-ProfileMenu {
+    while ($true) {
+        Clear-Host
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  PERFIS DE OTIMIZAÇÃO" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "`n  1. Gamer"
+        Write-Host "  2. Developer"
+        Write-Host "  3. Server"
+        Write-Host "  4. BatterySaver"
+        Write-Host "  5. Default (Balanceado)"
+        Write-Host "  6. Voltar"
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        $c = Read-Host "Escolha"
+        $c = $c -replace '\s+',''
+        switch ($c) {
+            "1" { Set-WMSProfile -Profile Gamer; Wait-KeyPress }
+            "2" { Set-WMSProfile -Profile Developer; Wait-KeyPress }
+            "3" { Set-WMSProfile -Profile Server; Wait-KeyPress }
+            "4" { Set-WMSProfile -Profile BatterySaver; Wait-KeyPress }
+            "5" { Set-WMSProfile -Profile Default; Wait-KeyPress }
+            "6" { return }
+            default { Write-Host "Opção inválida." -ForegroundColor Red; Start-Sleep 1 }
+        }
+    }
+}
+
+function Invoke-HardeningMenu {
+    while ($true) {
+        Clear-Host
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  HARDENING DE SEGURANÇA" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "`n  1. Baseline"
+        Write-Host "  2. Strict"
+        Write-Host "  3. Voltar"
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        $c = Read-Host "Escolha"
+        $c = $c -replace '\s+',''
+        switch ($c) {
+            "1" { Invoke-Hardening -Level Baseline; Wait-KeyPress }
+            "2" { Invoke-Hardening -Level Strict; Wait-KeyPress }
+            "3" { return }
+            default { Write-Host "Opção inválida." -ForegroundColor Red; Start-Sleep 1 }
         }
     }
 }
