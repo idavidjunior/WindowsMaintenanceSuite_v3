@@ -209,6 +209,52 @@ function Invoke-WinSxSAnalysis {
     }
 }
 
+function Get-TempFilesReport {
+    Write-Host "`n[>] Detectando arquivos temporarios..." -ForegroundColor Yellow
+    $paths = @($env:TEMP, $env:TMP, "$env:WINDIR\Temp") | Select-Object -Unique
+    $totalSizeBytes = 0
+    $totalCount = 0
+    foreach ($path in $paths) {
+        if (Test-Path $path) {
+            try {
+                $items = Get-ChildItem -Path $path -Recurse -Force -ErrorAction SilentlyContinue
+                $count = ($items | Measure-Object).Count
+                $size = ($items | Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
+                if (-not $size) { $size = 0 }
+                $totalCount += $count
+                $totalSizeBytes += $size
+                Write-Host ("      {0}: {1} itens, {2} MB" -f $path, $count, [Math]::Round($size / 1MB, 2)) -ForegroundColor White
+            } catch {
+                Write-Host "      [AVISO] Nao foi possivel ler $path" -ForegroundColor Yellow
+            }
+        }
+    }
+    Write-Host ("      TOTAL: {0} itens, ~{1} MB de lixo temporario detectado." -f $totalCount, [Math]::Round($totalSizeBytes / 1MB, 2)) -ForegroundColor Cyan
+    Write-Log "Deteccao de temp: $totalCount itens, ~$([Math]::Round($totalSizeBytes / 1MB, 2)) MB." "INFO"
+    return [PSCustomObject]@{ Count = $totalCount; SizeBytes = $totalSizeBytes; Paths = $paths }
+}
+
+function Clear-TempFilesDeep {
+    Write-Host "`n[>] Limpando arquivos temporarios..." -ForegroundColor Yellow
+    $report = Get-TempFilesReport
+    $removed = 0
+    $failed = 0
+    foreach ($path in $report.Paths) {
+        if (Test-Path $path) {
+            Get-ChildItem -Path $path -Force -ErrorAction SilentlyContinue | ForEach-Object {
+                try {
+                    Remove-Item -Path $_.FullName -Recurse -Force -ErrorAction Stop
+                    $removed++
+                } catch {
+                    $failed++
+                }
+            }
+        }
+    }
+    Write-Host "      [OK] $removed itens removidos. $failed itens em uso (ignorados)." -ForegroundColor Green
+    Write-Log "Limpeza de temp: $removed removidos, $failed em uso." "SUCCESS"
+}
+
 # ---------------------------------------------------------------------------
 # Funcao principal
 # ---------------------------------------------------------------------------
@@ -226,20 +272,21 @@ function Invoke-DeepCleaning {
     Write-Host "  6. Cache da Microsoft Store (wsreset)"
     Write-Host "  7. Limpar drivers antigos/superseded"
     Write-Host "  8. Analisar WinSxS (apenas relatorio)"
-    Write-Host "  9. APLICAR TODA a Limpeza Profunda"
-    Write-Host " 10. Voltar ao Menu Principal"
+    Write-Host "  9. Detectar e Limpar Arquivos Temporarios (%TEMP%/%TMP%/Windows Temp)"
+    Write-Host " 10. APLICAR TODA a Limpeza Profunda"
+    Write-Host " 11. Voltar ao Menu Principal"
     Write-Host "`n========================================" -ForegroundColor Cyan
 
     $choice = Read-Host "Digite o numero da sua escolha"
     $choice = $choice -replace '\s+', ''
 
-    if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max 10)) {
-        Write-Host "Opcao invalida. Digite um numero entre 1 e 10." -ForegroundColor Red
+    if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max 11)) {
+        Write-Host "Opcao invalida. Digite um numero entre 1 e 11." -ForegroundColor Red
         Start-Sleep -Seconds 2
         return
     }
 
-    $runAll = $choice -eq "9"
+    $runAll = $choice -eq "10"
     if ($runAll) {
         Write-Host "`n========================================" -ForegroundColor Magenta
         Write-Host "  LIMPEZA PROFUNDA COMPLETA" -ForegroundColor Magenta
@@ -256,8 +303,9 @@ function Invoke-DeepCleaning {
     if ($choice -eq "6" -or $runAll) { Clear-StoreCache }
     if ($choice -eq "7" -or $runAll) { Remove-OldDrivers }
     if ($choice -eq "8") { Invoke-WinSxSAnalysis }
+    if ($choice -eq "9" -or $runAll) { Clear-TempFilesDeep }
 
-    if ($choice -ne "8" -and $choice -ne "10") {
+    if ($choice -ne "8" -and $choice -ne "11") {
         $totalAfter = Get-DiskFreeGB
         $totalFreed = [Math]::Round($totalAfter - $totalBefore, 2)
         Write-Host "`n========================================" -ForegroundColor Green
@@ -267,5 +315,5 @@ function Invoke-DeepCleaning {
         Write-Log "Limpeza profunda concluida: ~$totalFreed GB liberados ($totalBefore -> $totalAfter GB)." "SUCCESS"
     }
 
-    if ($choice -eq "10") { return }
+    if ($choice -eq "11") { return }
 }
