@@ -32,19 +32,27 @@ try {
 Require-Administrator
 
 # Importar modulos de Manutencao e Diagnostico
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\EssentialMaintenance.ps1"
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\UltimateMaintenance.ps1"
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\DeepDiagnostics.ps1"
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\SmartDiagnostics.ps1"
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\RegistryBackupRestore.ps1"
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\SystemTweaks.ps1"
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\PerformanceMonitor.ps1"
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\DeepCleaning.ps1"
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\SystemLightweight.ps1"
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\DriverManager.ps1"
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\SecurityScan.ps1"
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\RegistryScanner.ps1"
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Modules\QuickTools.ps1"
+$modRoot = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Definition) '..\Modules'
+. (Join-Path $modRoot 'EssentialMaintenance.ps1')
+. (Join-Path $modRoot 'UltimateMaintenance.ps1')
+. (Join-Path $modRoot 'DeepDiagnostics.ps1')
+. (Join-Path $modRoot 'SmartDiagnostics.ps1')
+. (Join-Path $modRoot 'RegistryBackupRestore.ps1')
+. (Join-Path $modRoot 'SystemTweaks.ps1')
+. (Join-Path $modRoot 'PerformanceMonitor.ps1')
+. (Join-Path $modRoot 'DeepCleaning.ps1')
+. (Join-Path $modRoot 'SystemLightweight.ps1')
+. (Join-Path $modRoot 'DriverManager.ps1')
+. (Join-Path $modRoot 'SecurityScan.ps1')
+. (Join-Path $modRoot 'RegistryScanner.ps1')
+. (Join-Path $modRoot 'QuickTools.ps1')
+
+# Verificação rápida de carregamento
+if (-not (Get-Command Invoke-RegistryScan -ErrorAction SilentlyContinue)) {
+    Write-Error "Falha ao carregar o módulo RegistryScanner (Invoke-RegistryScan não encontrado)."
+    pause
+    exit 1
+}
 
 function Show-MainMenu {
     while ($true) {
