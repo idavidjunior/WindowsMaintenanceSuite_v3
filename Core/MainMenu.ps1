@@ -10,6 +10,17 @@
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
+# Desbloquear todos os .ps1 do projeto (remove o Mark-of-the-Web de arquivos
+# baixados via ZIP, que bloqueiam execucao mesmo sob -ExecutionPolicy Bypass
+# em alguns cenarios). Silencioso e nao-fatal: se falhar, o launcher segue.
+try {
+    $projectRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Definition)
+    Get-ChildItem -Path $projectRoot -Recurse -Filter "*.ps1" -ErrorAction SilentlyContinue |
+        Unblock-File -ErrorAction SilentlyContinue
+} catch {
+    # Nao interrompe o launcher se o unblock falhar (ex: sem permissao no volume)
+}
+
 # Importar modulos Core
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\Logger.ps1"
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\ConfigManager.ps1"

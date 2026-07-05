@@ -24,7 +24,6 @@ if %errorLevel% == 0 (
 )
 
 :run
-:: Executa o Menu Principal em PowerShell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%CORE_DIR%\MainMenu.ps1"
-
-pause
+:: Abre uma janela dedicada de PowerShell (nao cmd) e fecha esta janela imediatamente
+start "Windows Maintenance Suite" powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%CORE_DIR%\MainMenu.ps1"
+exit /b
