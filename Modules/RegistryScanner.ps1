@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Módulo de Varredura e Limpeza do Registro do Windows.
 .DESCRIPTION
