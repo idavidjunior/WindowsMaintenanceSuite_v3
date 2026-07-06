@@ -104,7 +104,6 @@ function Get-RegistryScanCategories {
             Check = {
                 param($valuePath)
                 if ([string]::IsNullOrWhiteSpace($valuePath)) { return $false }
-                # valuePath contém o comando; extrair primeiro executável entre aspas ou primeiro token
                 $cmd = $valuePath.Trim()
                 if ($cmd.StartsWith('"')) { $cmd = $cmd.TrimStart('"'); $cmd = $cmd.Substring(0,$cmd.IndexOf('"')) }
                 else { $cmd = $cmd.Split(' ')[0] }
@@ -117,7 +116,6 @@ function Get-RegistryScanCategories {
             IsValueScan = $true
             Check = {
                 param($fontFile)
-                # valor contém nome do arquivo da fonte; verificar se existe na pasta Fonts
                 $fontsDir = [Environment]::GetFolderPath('Fonts')
                 $full = Join-Path $fontsDir $fontFile
                 return (-not (Test-Path -Path $full -ErrorAction SilentlyContinue))
@@ -132,7 +130,6 @@ function Get-RegistryScanCategories {
             )
             Check = {
                 param($key)
-                # cada subchave deve ter um CLSID válido em HKCR\CLSID\{guid}
                 $clsid = (Get-ItemProperty -Path $key.PSPath -ErrorAction SilentlyContinue).'(default)'
                 if (-not $clsid) { return $false }
                 $clsidPath = "HKCR:\CLSID\$clsid"
@@ -148,7 +145,7 @@ function Get-RegistryScanCategories {
 
 function Get-RegistryJunkReport {
     param(
-        [switch]$UseDotNet = $true   # usar Microsoft.Win32.RegistryKey para performance
+        [switch]$UseDotNet = $true
     )
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "  VARREDURA DO REGISTRO" -ForegroundColor Cyan
@@ -170,13 +167,7 @@ function Get-RegistryJunkReport {
 
             if ($cat.IsValueScan) {
                 try {
-                    if ($UseDotNet) {
-                        $regKey = [Microsoft.Win32.Registry]::GetValue($hivePath.Replace('HKLM:','HKEY_LOCAL_MACHINE\').Replace('HKCU:','HKEY_CURRENT_USER\'), $null, $null)
-                        # fallback to Get-ItemProperty if not accessible
-                        $props = Get-ItemProperty -Path $hivePath -ErrorAction SilentlyContinue
-                    } else {
-                        $props = Get-ItemProperty -Path $hivePath -ErrorAction SilentlyContinue
-                    }
+                    $props = Get-ItemProperty -Path $hivePath -ErrorAction SilentlyContinue
                     if (-not $props) { continue }
                     $valueNames = $props.PSObject.Properties | Where-Object { $_.Name -notlike "PS*" }
                     $total = ($valueNames | Measure-Object).Count
@@ -185,7 +176,7 @@ function Get-RegistryJunkReport {
                         $i++
                         if ($total -gt 0) {
                             Write-Progress -Activity $baseActivity -Status "$($cat.Name): $($v.Name)" `
-                                -PercentComplete ([int](($catIndex - 1) / $totalCategories * 100 + ($i / $total) * (100 / $totalCategories)))
+                                -PercentComplete ([int]([Math]::Round((($catIndex - 1) / $totalCategories) * 100 + ($i / $total) * (100 / $totalCategories))
                         }
                         $checkTarget = if ($cat.ValueNameIsPath) { $v.Name } else { $v.Value }
                         if ([string]::IsNullOrWhiteSpace($checkTarget)) { continue }
@@ -211,7 +202,7 @@ function Get-RegistryJunkReport {
                         $i++
                         if ($total -gt 0) {
                             Write-Progress -Activity $baseActivity -Status "$($cat.Name): $($key.PSChildName)" `
-                                -PercentComplete ([int](($catIndex - 1) / $totalCategories * 100 + ($i / $total) * (100 / $totalCategories)))
+                                -PercentComplete [int](($catIndex - 1) / $totalCategories * 100 + ($i / $total) * (100 / $totalCategories))
                         }
                         $fullPath = $key.PSPath
                         if (Test-ExcludedPath -Path $fullPath) { continue }
@@ -325,7 +316,7 @@ function Clear-RegistryJunk {
 
     foreach ($item in $Findings) {
         $i++
-        Write-Progress -Activity "Limpando registro" -Status "$($item.Category): $($item.Detail)" -PercentComplete ([int]($i / $total * 100))
+        Write-Progress -Activity "Limpando registro" -Status "$($item.Category): $($item.Detail)" -PercentComplete [int]($i / $total * 100)
         try {
             if ($item.ValueName) {
                 if (-not $DryRun) {
@@ -347,7 +338,6 @@ function Clear-RegistryJunk {
     Write-Progress -Activity "Limpando registro" -Completed
 
     if (-not $DryRun) {
-        # salvar undo log
         $backupPath = Get-SafeBackupPath
         $undoFile = Join-Path $backupPath "Undo_RegistryCleanup_$(Get-Date -Format 'yyyyMMdd_HHmmss').ps1"
         $undoLog | Set-Content -Path $undoFile -Encoding UTF8
