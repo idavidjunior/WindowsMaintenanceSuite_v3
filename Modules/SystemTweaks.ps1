@@ -1,9 +1,9 @@
-<#
+﻿<#
 .SYNOPSIS
-    Módulo para aplicar ajustes (tweaks) de sistema no Windows.
+    MÃ³dulo para aplicar ajustes (tweaks) de sistema no Windows.
 .DESCRIPTION
-    Este módulo contém funções para otimizar o desempenho, privacidade e experiência do usuário
-    no Windows, com a opção de reverter as alterações.
+    Este mÃ³dulo contÃ©m funÃ§Ãµes para otimizar o desempenho, privacidade e experiÃªncia do usuÃ¡rio
+    no Windows, com a opÃ§Ã£o de reverter as alteraÃ§Ãµes.
 #>
 
 # Importar SecurityHelper
@@ -12,7 +12,7 @@
 # Importar Logger para registro de eventos
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\Logger.ps1"
 
-# Validar privilégios de administrador (já verificado pelo MainMenu/WMS.bat)
+# Validar privilÃ©gios de administrador (jÃ¡ verificado pelo MainMenu/WMS.bat)
 # Require-Administrator  # Comentado temporariamente para teste
 
 function Get-HighPerformancePlanGuid {
@@ -216,7 +216,7 @@ function Show-TweaksMenu {
     Write-Host "`n========================================" -ForegroundColor Cyan
 }
 
-# Função auxiliar para backup de chave de registro
+# FunÃ§Ã£o auxiliar para backup de chave de registro
 function Backup-RegistryKey {
     param (
         [string]$KeyPath,
@@ -237,7 +237,7 @@ function Backup-RegistryKey {
                 return $null
             }
         } else {
-            Write-Host "Erro: Comando 'reg' não está disponível no sistema." -ForegroundColor Red
+            Write-Host "Erro: Comando 'reg' nÃ£o estÃ¡ disponÃ­vel no sistema." -ForegroundColor Red
             return $null
         }
     }
@@ -251,18 +251,18 @@ function Backup-RegistryKey {
 function Set-HighPerformancePowerPlan {
     Write-Host "`n[1/5] Ativando Plano de Energia 'Desempenho Maximo'..." -ForegroundColor Yellow
 
-    # Salvar configuração atual para rollback
+    # Salvar configuraÃ§Ã£o atual para rollback
     $originalScheme = $null
     try {
         $originalScheme = powercfg /getactivescheme 2>&1
     } catch {
-        # Continuar mesmo se não conseguir obter esquema atual
+        # Continuar mesmo se nÃ£o conseguir obter esquema atual
     }
 
     try {
         if (-not (Test-ExternalCommand "powercfg")) {
-            Write-Host "      [ERRO] Comando 'powercfg' não está disponível no sistema." -ForegroundColor Red
-            Write-Log "Comando powercfg não encontrado." "ERROR"
+            Write-Host "      [ERRO] Comando 'powercfg' nÃ£o estÃ¡ disponÃ­vel no sistema." -ForegroundColor Red
+            Write-Log "Comando powercfg nÃ£o encontrado." "ERROR"
             return
         }
 
@@ -270,7 +270,7 @@ function Set-HighPerformancePowerPlan {
         if ([string]::IsNullOrWhiteSpace($highPerfGUID)) {
             $schemes = powercfg /list 2>&1
             if ($LASTEXITCODE -ne 0) {
-                Write-Host "      [ERRO] Não foi possível listar planos de energia: $(Get-SafeErrorMessage $schemes)" -ForegroundColor Red
+                Write-Host "      [ERRO] NÃ£o foi possÃ­vel listar planos de energia: $(Get-SafeErrorMessage $schemes)" -ForegroundColor Red
                 Write-Log "Erro ao listar planos de energia." "ERROR"
                 return
             }
@@ -294,7 +294,7 @@ function Set-HighPerformancePowerPlan {
         # Verifica se o plano ja esta ativo
         $currentScheme = powercfg /getactivescheme 2>&1
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "      [ERRO] Não foi possível verificar plano ativo: $(Get-SafeErrorMessage $currentScheme)" -ForegroundColor Red
+            Write-Host "      [ERRO] NÃ£o foi possÃ­vel verificar plano ativo: $(Get-SafeErrorMessage $currentScheme)" -ForegroundColor Red
             Write-Log "Erro ao verificar plano ativo." "ERROR"
             return
         }
@@ -303,16 +303,16 @@ function Set-HighPerformancePowerPlan {
             Write-Host "      [INFO] Plano de energia 'Desempenho Maximo' ja estava ativo." -ForegroundColor Cyan
             Write-Log "Plano de energia 'Desempenho Maximo' ja estava ativo." "INFO"
         } elseif (-not (Test-Administrator)) {
-            Write-Host "      [WARNING] Plano encontrado, mas a ativação exige privilégios de administrador." -ForegroundColor Yellow
-            Write-Log "Plano encontrado, mas a ativação exige privilégios de administrador." "WARNING"
+            Write-Host "      [WARNING] Plano encontrado, mas a ativaÃ§Ã£o exige privilÃ©gios de administrador." -ForegroundColor Yellow
+            Write-Log "Plano encontrado, mas a ativaÃ§Ã£o exige privilÃ©gios de administrador." "WARNING"
         } else {
             $result = powercfg /setactive $highPerfGUID 2>&1
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "      [OK] Plano de energia 'Desempenho Maximo' ativado com sucesso (GUID: $highPerfGUID)." -ForegroundColor Green
                 Write-Log "Plano de energia 'Desempenho Maximo' ativado." "SUCCESS"
             } else {
-                Write-Host "      [ERRO] Falha ao ativar plano. Verifique privilégios de administrador." -ForegroundColor Red
-                Write-Log "Erro ao ativar plano de energia. Verifique privilégios de administrador." "ERROR"
+                Write-Host "      [ERRO] Falha ao ativar plano. Verifique privilÃ©gios de administrador." -ForegroundColor Red
+                Write-Log "Erro ao ativar plano de energia. Verifique privilÃ©gios de administrador." "ERROR"
             }
         }
     }
@@ -599,17 +599,17 @@ function Optimize-CPUCores {
                         if ($LASTEXITCODE -eq 0) {
                             Write-Host "      [OK] Limite de nucleos removido do boot." -ForegroundColor Green
                         } else {
-                            Write-Host "      [WARNING] Não foi possível remover limite de nucleos: $(Get-SafeErrorMessage $result)" -ForegroundColor Yellow
+                            Write-Host "      [WARNING] NÃ£o foi possÃ­vel remover limite de nucleos: $(Get-SafeErrorMessage $result)" -ForegroundColor Yellow
                         }
                     }
                 } else {
-                    Write-Host "      [WARNING] Não foi possível verificar configuracao de boot: $(Get-SafeErrorMessage $currentBootConfig)" -ForegroundColor Yellow
+                    Write-Host "      [WARNING] NÃ£o foi possÃ­vel verificar configuracao de boot: $(Get-SafeErrorMessage $currentBootConfig)" -ForegroundColor Yellow
                 }
             } catch {
                 Write-Host "      [WARNING] Erro ao acessar configuracao de boot: $(Get-SafeErrorMessage $_)" -ForegroundColor Yellow
             }
         } else {
-            Write-Host "      [WARNING] Comando 'bcdedit' não está disponível. Pulando configuracao de boot." -ForegroundColor Yellow
+            Write-Host "      [WARNING] Comando 'bcdedit' nÃ£o estÃ¡ disponÃ­vel. Pulando configuracao de boot." -ForegroundColor Yellow
         }
 
         # Otimizar agendamento de processador
@@ -832,7 +832,7 @@ function Is-TweakApplied {
             if ($LASTEXITCODE -ne 0) { return $false }
             $highPerfGUID = $null
             foreach ($line in $schemes) {
-                if ($line -match 'Desempenho [Mm][áa]ximo|Ultimate Performance|High Performance|Performance') {
+                if ($line -match 'Desempenho [Mm][Ã¡a]ximo|Ultimate Performance|High Performance|Performance') {
                     if ($line -match '([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})') {
                         $highPerfGUID = $matches[1]
                         break
@@ -1257,7 +1257,7 @@ function Get-TweaksStatus {
     } elseif ($appliedCount -eq 0) {
         Write-Host "Nenhum tweak aplicado." -ForegroundColor Red
     } else {
-        Write-Host "$appliedCount tweak(s) aplicado(s). Use a opcao 20 para aplicar todos." -ForegroundColor Yellow
+        Write-Host "$appliedCount tweak(s) aplicado(s). Use a Opção 20 para aplicar todos." -ForegroundColor Yellow
     }
     
     Write-Log "Status dos tweaks verificado: $appliedCount/$totalTweaks aplicados" "INFO"
@@ -1268,12 +1268,12 @@ function Invoke-SystemTweaks {
 
     $choice = Read-Host "Digite o numero da sua escolha"
 
-    # Remover espaços em branco
+    # Remover espaÃ§os em branco
     $choice = $choice -replace '\s+', ''
 
     # Validar input
     if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max 22)) {
-        Write-Host "Opcao invalida. Por favor, digite um numero entre 1 e 22." -ForegroundColor Red
+        Write-Host "Opção inválida. Por favor, digite um numero entre 1 e 22." -ForegroundColor Red
         Start-Sleep -Seconds 2
         return
     }
@@ -1408,9 +1408,11 @@ function Invoke-SystemTweaks {
         }
         "22" { return }
         default {
-            Write-Host "Opcao invalida. Por favor, tente novamente." -ForegroundColor Red
+            Write-Host "Opção inválida. Por favor, tente novamente." -ForegroundColor Red
             Start-Sleep -Seconds 2
         }
     }
 }
 
+
+Export-ModuleMember -Function *

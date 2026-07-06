@@ -1,9 +1,9 @@
-<#
+﻿<#
 .SYNOPSIS
     Modulo Gerenciador de Drivers (Driver Manager).
 .DESCRIPTION
     Lista, atualiza (via Windows Update nativo), faz backup e remove drivers
-    superseded/orfãos. Usa APENAS ferramentas nativas do Windows
+    superseded/orfÃ£os. Usa APENAS ferramentas nativas do Windows
     (pnputil, dism, COM do Windows Update) - sem baixar nada de terceiros.
 #>
 
@@ -189,7 +189,7 @@ function Invoke-DriverManager {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "  GERENCIADOR DE DRIVERS" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "`nSelecione uma opcao:" -ForegroundColor Cyan
+    Write-Host "`nSelecione uma Opção:" -ForegroundColor Cyan
     Write-Host "  1. Listar drivers de terceiros instalados"
     Write-Host "  2. Procurar atualizacoes de driver (Windows Update)"
     Write-Host "  3. Baixar e instalar atualizacoes de driver"
@@ -203,7 +203,7 @@ function Invoke-DriverManager {
     $choice = $choice -replace '\s+', ''
 
     if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max 7)) {
-        Write-Host "Opcao invalida. Digite um numero entre 1 e 7." -ForegroundColor Red
+        Write-Host "Opção inválida. Digite um numero entre 1 e 7." -ForegroundColor Red
         Start-Sleep -Seconds 2
         return
     }
@@ -247,9 +247,9 @@ function Invoke-DriverManager {
                 $dismProc = Start-Process -FilePath "dism.exe" -ArgumentList "/Online /Export-Driver /Destination:`"$backupDir`"" -Wait -PassThru -NoNewWindow
                 if ($dismProc.ExitCode -eq 0) {
                     $count = (Get-ChildItem -Path $backupDir -Recurse -Filter "*.inf" -ErrorAction SilentlyContinue).Count
-                    Write-Host "      [OK] Backup concluido. $count pacote(s) de driver exportado(s)." -ForegroundColor Green
+                    Write-Host "      [OK] Backup concluído. $count pacote(s) de driver exportado(s)." -ForegroundColor Green
                     Write-Host "      Local: $backupDir" -ForegroundColor Green
-                    Write-Log "Backup de drivers concluido em $backupDir ($count pacotes)." "SUCCESS"
+                    Write-Log "Backup de drivers concluído em $backupDir ($count pacotes)." "SUCCESS"
                 } else {
                     Write-Host "      [ERRO] DISM falhou ao exportar drivers (codigo $($dismProc.ExitCode))." -ForegroundColor Red
                     Write-Log "Falha no backup de drivers (codigo $($dismProc.ExitCode))." "ERROR"
@@ -262,7 +262,7 @@ function Invoke-DriverManager {
         "5" {
             Write-Host "`n[5] Remover drivers antigos/superseded (AVANCADO)..." -ForegroundColor Yellow
             Write-Host "      [AVISO] Esta operacao remove versoes antigas de drivers." -ForegroundColor Red
-            Write-Host "      [AVISO] Faca um backup (opcao 4) antes de continuar." -ForegroundColor Red
+            Write-Host "      [AVISO] Faca um backup (Opção 4) antes de continuar." -ForegroundColor Red
             $superseded = Get-SupersededDrivers
             if ($superseded.Count -eq 0) {
                 Write-Host "      [OK] Nenhum driver superseded encontrado. Nada a remover." -ForegroundColor Green
@@ -313,3 +313,5 @@ function Invoke-DriverManager {
         "7" { return }
     }
 }
+
+Export-ModuleMember -Function *

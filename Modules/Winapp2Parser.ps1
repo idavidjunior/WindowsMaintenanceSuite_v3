@@ -89,3 +89,5 @@ function Import-Winapp2Rules {
     return $rules
 }
 
+
+Export-ModuleMember -Function *

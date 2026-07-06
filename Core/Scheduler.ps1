@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Modulo de Agendamento de Manutencao.
 .DESCRIPTION
@@ -123,7 +123,7 @@ function Invoke-MaintenanceScheduler {
         Write-Host "`n  [INFO] Nenhuma tarefa de manutencao agendada no momento." -ForegroundColor Yellow
     }
 
-    Write-Host "`nSelecione uma opcao:" -ForegroundColor Cyan
+    Write-Host "`nSelecione uma Opção:" -ForegroundColor Cyan
     Write-Host "  1. Agendar manutencao semanal (escolher dia/hora)"
     Write-Host "  2. Agendar padrao (Domingo as 03:00)"
     Write-Host "  3. Remover tarefa agendada"
@@ -134,7 +134,7 @@ function Invoke-MaintenanceScheduler {
     $choice = $choice -replace '\s+', ''
 
     if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max 4)) {
-        Write-Host "Opcao invalida. Digite um numero entre 1 e 4." -ForegroundColor Red
+        Write-Host "Opção inválida. Digite um numero entre 1 e 4." -ForegroundColor Red
         Start-Sleep -Seconds 2
         return
     }

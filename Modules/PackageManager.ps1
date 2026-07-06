@@ -54,3 +54,28 @@ function Uninstall-Bloat {
     }
     Write-Host "  [OK] Limpeza de bloatware concluída." -ForegroundColor Green
 }
+
+function Invoke-PackageManagerMenu {
+    while ($true) {
+        Clear-Host
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  GERENCIADOR DE PACOTES" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "`n  1. Instalar aplicativo (informar ID)"
+        Write-Host "  2. Atualizar todos os pacotes"
+        Write-Host "  3. Remover bloatware padrão"
+        Write-Host "  4. Voltar"
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        $c = Read-Host "Escolha"
+        $c = $c -replace '\s+',''
+        switch ($c) {
+            "1" { $id = Read-Host "ID do pacote (ex: Microsoft.VSCode)"; Install-App -Id $id; Wait-KeyPress }
+            "2" { Update-AllApps; Wait-KeyPress }
+            "3" { Uninstall-Bloat; Wait-KeyPress }
+            "4" { return }
+            default { Write-Host "Opção inválida." -ForegroundColor Red; Start-Sleep 1 }
+        }
+    }
+}
+
+Export-ModuleMember -Function *

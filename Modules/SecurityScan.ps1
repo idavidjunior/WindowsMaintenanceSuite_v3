@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Modulo de Verificacao de Virus e Ameacas.
 .DESCRIPTION
@@ -102,7 +102,7 @@ function Invoke-SecurityScan {
     $choice = $choice -replace '\s+', ''
 
     if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max 4)) {
-        Write-Host "Opcao invalida." -ForegroundColor Red
+        Write-Host "Opção inválida." -ForegroundColor Red
         Start-Sleep -Seconds 2
         return
     }
@@ -114,3 +114,5 @@ function Invoke-SecurityScan {
         "4" { return }
     }
 }
+
+Export-ModuleMember -Function *

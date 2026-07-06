@@ -1,22 +1,22 @@
-<#
+﻿<#
 .SYNOPSIS
-    Módulo para backup e restauração do Registro do Windows.
+    MÃ³dulo para backup e restauraÃ§Ã£o do Registro do Windows.
 .DESCRIPTION
-    Este módulo fornece funções para criar backups completos do registro e restaurá-los,
-    aumentando a segurança antes de operações críticas de manutenção.
+    Este mÃ³dulo fornece funÃ§Ãµes para criar backups completos do registro e restaurÃ¡-los,
+    aumentando a seguranÃ§a antes de operaÃ§Ãµes crÃ­ticas de manutenÃ§Ã£o.
 #>
 
 # Importar SecurityHelper
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\SecurityHelper.ps1"
 
-# NOTA: A verificação de administrador é feita UMA ÚNICA vez em MainMenu.ps1.
+# NOTA: A verificaÃ§Ã£o de administrador Ã© feita UMA ÃšNICA vez em MainMenu.ps1.
 
 function Backup-Registry {
     param (
         [string]$BackupPath = ""
     )
 
-    # Usar caminho seguro se não especificado
+    # Usar caminho seguro se nÃ£o especificado
     if ([string]::IsNullOrEmpty($BackupPath)) {
         $BackupPath = Get-SafeBackupPath
     }
@@ -24,13 +24,13 @@ function Backup-Registry {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "  BACKUP DO REGISTRO" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "`n[1/4] Criando diretorio de backup..." -ForegroundColor Yellow
+    Write-Host "`n[1/4] Criando diretório de backup..." -ForegroundColor Yellow
 
     if (-not (Test-Path -Path $BackupPath)) {
         New-Item -ItemType Directory -Path $BackupPath -Force | Out-Null
-        Write-Host "      [OK] Diretorio criado: $BackupPath" -ForegroundColor Green
+        Write-Host "      [OK] diretório criado: $BackupPath" -ForegroundColor Green
     } else {
-        Write-Host "      [OK] Diretorio ja existe: $BackupPath" -ForegroundColor Green
+        Write-Host "      [OK] diretório ja existe: $BackupPath" -ForegroundColor Green
     }
 
     Write-Host "`n[2/4] Gerando nome do arquivo..." -ForegroundColor Yellow
@@ -60,12 +60,12 @@ function Backup-Registry {
             return $false
         }
         
-        # Criar arquivo combinado sem cabeçalhos duplicados
+        # Criar arquivo combinado sem cabeÃ§alhos duplicados
         Write-Host "`n[4/4] Combinando arquivos de backup..." -ForegroundColor Yellow
         $hklmContent = Get-Content $BackupFileHKLM
         $hkcuContent = Get-Content $BackupFileHKCU
 
-        # Se ambos os arquivos tiverem cabeçalho, mantenha apenas o primeiro
+        # Se ambos os arquivos tiverem cabeÃ§alho, mantenha apenas o primeiro
         if ($hkcuContent.Count -gt 0 -and $hkcuContent[0] -match '^Windows Registry Editor Version') {
             $hkcuContent = $hkcuContent | Select-Object -Skip 1
         }
@@ -86,12 +86,12 @@ function Backup-Registry {
         Write-Host "      [OK] Backup combinado criado ($backupSize MB)." -ForegroundColor Green
         
         Write-Host "`n========================================" -ForegroundColor Green
-        Write-Host "  BACKUP CONCLUIDO COM SUCESSO!" -ForegroundColor Green
+        Write-Host "  BACKUP concluído COM SUCESSO!" -ForegroundColor Green
         Write-Host "  Arquivo: $BackupFile" -ForegroundColor Green
         Write-Host "  Tamanho: $backupSize MB" -ForegroundColor Green
         Write-Host "========================================" -ForegroundColor Green
         
-        Write-Log "Backup do Registro concluido: $BackupFile ($backupSize MB)" "SUCCESS"
+        Write-Log "Backup do Registro concluído: $BackupFile ($backupSize MB)" "SUCCESS"
         return $true
     }
     catch {
@@ -110,7 +110,7 @@ function Restore-Registry {
     )
 
     Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "  RESTAURACAO DO REGISTRO" -ForegroundColor Cyan
+    Write-Host "  restauração DO REGISTRO" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
     
     if (-not (Test-Path -Path $BackupFile)) {
@@ -128,8 +128,8 @@ function Restore-Registry {
     
     $Confirm = Read-Host "Tem certeza que deseja continuar? (S/N)"
     if ($Confirm -ne 'S') {
-        Write-Host "`n[INFO] Restauracao cancelada pelo usuario." -ForegroundColor Yellow
-        Write-Log "Restauracao cancelada pelo usuario." "INFO"
+        Write-Host "`n[INFO] restauração cancelada pelo usuario." -ForegroundColor Yellow
+        Write-Log "restauração cancelada pelo usuario." "INFO"
         return $false
     }
 
@@ -139,12 +139,12 @@ function Restore-Registry {
         $importProcess = Start-Process -FilePath "reg.exe" -ArgumentList "import `"$BackupFile`"" -Wait -PassThru -NoNewWindow
 
         if ($importProcess.ExitCode -eq 0) {
-            Write-Host "      [OK] Restauracao concluida com sucesso." -ForegroundColor Green
+            Write-Host "      [OK] restauração concluida com sucesso." -ForegroundColor Green
             Write-Host "`n========================================" -ForegroundColor Green
-            Write-Host "  RESTAURACAO CONCLUIDA!" -ForegroundColor Green
+            Write-Host "  restauração CONCLUIDA!" -ForegroundColor Green
             Write-Host "  REINICIE O COMPUTADOR" -ForegroundColor Green
             Write-Host "========================================" -ForegroundColor Green
-            Write-Log "Restauracao do Registro concluida: $BackupFile" "SUCCESS"
+            Write-Log "restauração do Registro concluida: $BackupFile" "SUCCESS"
             return $true
         } else {
             Write-Host "      [ERRO] Falha ao importar arquivo de registro." -ForegroundColor Red
@@ -210,11 +210,11 @@ function Backup-TweaksConfig {
 
     Write-Host "`n[OK] $exported de $($keys.Count) chaves exportadas." -ForegroundColor Green
     Write-Host "     Pasta: $tweaksBackupDir" -ForegroundColor Green
-    Write-Host "     Para reverter: Restaure cada .reg ou use a opcao de Restaurar." -ForegroundColor Cyan
-    Write-Log "Backup da config de tweaks concluido: $exported/$($keys.Count) chaves em $tweaksBackupDir" "SUCCESS"
+    Write-Host "     Para reverter: Restaure cada .reg ou use a Opção de Restaurar." -ForegroundColor Cyan
+    Write-Log "Backup da config de tweaks concluído: $exported/$($keys.Count) chaves em $tweaksBackupDir" "SUCCESS"
 
     Write-Host "`n========================================" -ForegroundColor Green
-    Write-Host "  BACKUP DE TWEAKS CONCLUIDO!" -ForegroundColor Green
+    Write-Host "  BACKUP DE TWEAKS concluído!" -ForegroundColor Green
     Write-Host "========================================" -ForegroundColor Green
     return $tweaksBackupDir
 }
@@ -239,17 +239,17 @@ function Restore-TweaksConfig {
             Write-Host "  $($i+1). $($tweaksBackups[$i].Name)  ($($tweaksBackups[$i].LastWriteTime))"
         }
         $sel = Read-Host "Selecione o numero do backup para restaurar"
-        if ($sel -match '^\d+$' -and $sel -ge 1 -and $sel -le $tweaksBackups.Count) {
+        if ($sel -match '^\d+$' -and [int]$sel -ge 1 -and [int]$sel -le $tweaksBackups.Count) {
             $BackupFolder = $tweaksBackups[[int]$sel - 1].FullName
         } else {
-            Write-Host "Escolha invalida." -ForegroundColor Red
+            Write-Host "Escolha inválida." -ForegroundColor Red
             return $false
         }
     }
 
     $confirm = Read-Host "`n[AVISO] Isto vai sobrescrever as chaves de registro atuais. Continuar? (S/N)"
     if ($confirm -ne 'S' -and $confirm -ne 's') {
-        Write-Host "Restauracao cancelada." -ForegroundColor Yellow
+        Write-Host "restauração cancelada." -ForegroundColor Yellow
         return $false
     }
 
@@ -262,7 +262,9 @@ function Restore-TweaksConfig {
 
     Write-Host "`n[OK] $restored de $($regFiles.Count) chaves restauradas." -ForegroundColor Green
     Write-Host "     Reinicie o computador para aplicar todas as alteracoes." -ForegroundColor Cyan
-    Write-Log "Restauracao de tweaks: $restored/$($regFiles.Count) chaves de $BackupFolder" "SUCCESS"
+    Write-Log "restauração de tweaks: $restored/$($regFiles.Count) chaves de $BackupFolder" "SUCCESS"
     return $true
 }
 
+
+Export-ModuleMember -Function *

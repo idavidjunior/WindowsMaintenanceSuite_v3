@@ -82,3 +82,26 @@ function Invoke-Hardening {
 
     Write-Host "`n  Hardening $Level concluído." -ForegroundColor Cyan
 }
+
+function Invoke-HardeningMenu {
+    while ($true) {
+        Clear-Host
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  HARDENING DE SEGURANÇA" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "`n  1. Baseline"
+        Write-Host "  2. Strict"
+        Write-Host "  3. Voltar"
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        $c = Read-Host "Escolha"
+        $c = $c -replace '\s+',''
+        switch ($c) {
+            "1" { Invoke-Hardening -Level Baseline; Wait-KeyPress }
+            "2" { Invoke-Hardening -Level Strict; Wait-KeyPress }
+            "3" { return }
+            default { Write-Host "Opção inválida." -ForegroundColor Red; Start-Sleep 1 }
+        }
+    }
+}
+
+Export-ModuleMember -Function *

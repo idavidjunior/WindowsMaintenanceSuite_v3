@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Menu principal interativo para o Windows Maintenance Suite.
 .DESCRIPTION
@@ -21,59 +21,50 @@ try {
     # Nao interrompe o launcher se o unblock falhar (ex: sem permissao no volume)
 }
 
-# Importar modulos Core
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\Logger.ps1"
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\ConfigManager.ps1"
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\HealthEngine.ps1"
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\SecurityHelper.ps1"
-. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\Scheduler.ps1"
+$corePath = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$modRoot = Join-Path $corePath '..\Modules'
+
+$coreModules = @('Logger.ps1','ConfigManager.ps1','HealthEngine.ps1','SecurityHelper.ps1','Scheduler.ps1')
+foreach ($mod in $coreModules) {
+    Import-Module (Join-Path $corePath $mod) -Force -DisableNameChecking
+}
 
 # Validar privilegios de administrador (verificacao UNICA, em nivel de menu)
 Require-Administrator
 
-# Importar modulos de Manutencao e Diagnostico
-$modRoot = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Definition) '..\Modules'
-. (Join-Path $modRoot 'EssentialMaintenance.ps1')
-. (Join-Path $modRoot 'UltimateMaintenance.ps1')
-. (Join-Path $modRoot 'DeepDiagnostics.ps1')
-. (Join-Path $modRoot 'SmartDiagnostics.ps1')
-. (Join-Path $modRoot 'RegistryBackupRestore.ps1')
-. (Join-Path $modRoot 'SystemTweaks.ps1')
-. (Join-Path $modRoot 'PerformanceMonitor.ps1')
-. (Join-Path $modRoot 'DeepCleaning.ps1')
-. (Join-Path $modRoot 'SystemLightweight.ps1')
-. (Join-Path $modRoot 'DriverManager.ps1')
-. (Join-Path $modRoot 'SecurityScan.ps1')
-. (Join-Path $modRoot 'RegistryScanner.ps1')
-. (Join-Path $modRoot 'QuickTools.ps1')
-. (Join-Path $modRoot 'SelfUpdate.ps1')
-. (Join-Path $modRoot 'PackageManager.ps1')
-. (Join-Path $modRoot 'Profiles.ps1')
-. (Join-Path $modRoot 'Hardening.ps1')
+$moduleFiles = @(
+    'EssentialMaintenance.ps1','UltimateMaintenance.ps1','DeepDiagnostics.ps1','SmartDiagnostics.ps1',
+    'RegistryBackupRestore.ps1','SystemTweaks.ps1','PerformanceMonitor.ps1','DeepCleaning.ps1',
+    'SystemLightweight.ps1','DriverManager.ps1','SecurityScan.ps1','RegistryScanner.ps1',
+    'QuickTools.ps1','SelfUpdate.ps1','PackageManager.ps1','Profiles.ps1','Hardening.ps1'
+)
+foreach ($mod in $moduleFiles) {
+    Import-Module (Join-Path $modRoot $mod) -Force -DisableNameChecking
+}
 
-# Verificação rápida de carregamento
+# VerificaÃ§Ã£o rÃ¡pida de carregamento
 if (-not (Get-Command Invoke-RegistryScan -ErrorAction SilentlyContinue)) {
-    Write-Error "Falha ao carregar o módulo RegistryScanner (Invoke-RegistryScan não encontrado)."
+    Write-Error "Falha ao carregar o mÃ³dulo RegistryScanner (Invoke-RegistryScan nÃ£o encontrado)."
     pause
     exit 1
 }
 if (-not (Get-Command Update-WMS -ErrorAction SilentlyContinue)) {
-    Write-Error "Falha ao carregar o módulo SelfUpdate (Update-WMS não encontrado)."
+    Write-Error "Falha ao carregar o mÃ³dulo SelfUpdate (Update-WMS nÃ£o encontrado)."
     pause
     exit 1
 }
 if (-not (Get-Command Install-App -ErrorAction SilentlyContinue)) {
-    Write-Error "Falha ao carregar o módulo PackageManager (Install-App não encontrado)."
+    Write-Error "Falha ao carregar o mÃ³dulo PackageManager (Install-App nÃ£o encontrado)."
     pause
     exit 1
 }
 if (-not (Get-Command Set-WMSProfile -ErrorAction SilentlyContinue)) {
-    Write-Error "Falha ao carregar o módulo Profiles (Set-WMSProfile não encontrado)."
+    Write-Error "Falha ao carregar o mÃ³dulo Profiles (Set-WMSProfile nÃ£o encontrado)."
     pause
     exit 1
 }
 if (-not (Get-Command Invoke-Hardening -ErrorAction SilentlyContinue)) {
-    Write-Error "Falha ao carregar o módulo Hardening (Invoke-Hardening não encontrado)."
+    Write-Error "Falha ao carregar o mÃ³dulo Hardening (Invoke-Hardening nÃ£o encontrado)."
     pause
     exit 1
 }
@@ -86,7 +77,7 @@ function Show-MainMenu {
         Write-Host "  WINDOWS MAINTENANCE SUITE" -ForegroundColor Green
         Write-Host "  MENU PRINCIPAL" -ForegroundColor Green
         Write-Host "========================================" -ForegroundColor Green
-        Write-Host "`nSelecione uma opcao:"
+        Write-Host "`nSelecione uma Opção:"
         Write-Host "  --- MANUTENCAO ---"
         Write-Host "  1. Manutencao Essencial"
         Write-Host "  2. Manutencao Completa"
@@ -122,7 +113,7 @@ function Show-MainMenu {
         $isValid = Test-ValidNumericInput -Value $choice -Min 1 -Max 20
 
         if (-not $isValid) {
-            Write-Host "Opcao invalida. Por favor, digite um numero entre 1 e 20." -ForegroundColor Red
+            Write-Host "Opção inválida. Por favor, digite um numero entre 1 e 20." -ForegroundColor Red
             Start-Sleep -Seconds 2
             continue
         }
@@ -178,7 +169,7 @@ function Show-MainMenu {
                 Wait-KeyPress
             }
             "11" {
-                Write-Log "Iniciando Restauracao do Registro."
+                Write-Log "Iniciando restauração do Registro."
                 $backupPath = Get-SafeBackupPath
                 $backupFiles = @()
                 if (Test-Path -Path $backupPath) {
@@ -192,10 +183,10 @@ function Show-MainMenu {
                         Write-Host "  $($i+1). $($backupFiles[$i]) ($backupSize MB)"
                     }
                     $backupChoice = Read-Host "Selecione o numero do backup para restaurar"
-                    if ($backupChoice -match "^\d+$" -and $backupChoice -ge 1 -and $backupChoice -le $backupFiles.Count) {
+                    if ($backupChoice -match "^\d+$" -and [int]$backupChoice -ge 1 -and [int]$backupChoice -le $backupFiles.Count) {
                         Restore-Registry -BackupFile $backupFiles[$backupChoice-1]
                     } else {
-                        Write-Host "Escolha invalida." -ForegroundColor Red
+                        Write-Host "Escolha inválida." -ForegroundColor Red
                     }
                 } else {
                     Write-Host "Nenhum backup de registro encontrado em C:\WMS_RegistryBackups." -ForegroundColor Yellow
@@ -247,87 +238,11 @@ function Show-MainMenu {
                 return
             }
             default {
-                Write-Host "Opcao invalida. Por favor, tente novamente." -ForegroundColor Red
+                Write-Host "Opção inválida. Por favor, tente novamente." -ForegroundColor Red
                 Start-Sleep -Seconds 2
             }
         }
     }
-}
-
-function Invoke-PackageManagerMenu {
-    while ($true) {
-        Clear-Host
-        Write-Host "========================================" -ForegroundColor Cyan
-        Write-Host "  GERENCIADOR DE PACOTES" -ForegroundColor Cyan
-        Write-Host "========================================" -ForegroundColor Cyan
-        Write-Host "`n  1. Instalar aplicativo (informar ID)"
-        Write-Host "  2. Atualizar todos os pacotes"
-        Write-Host "  3. Remover bloatware padrão"
-        Write-Host "  4. Voltar"
-        Write-Host "`n========================================" -ForegroundColor Cyan
-        $c = Read-Host "Escolha"
-        $c = $c -replace '\s+',''
-        switch ($c) {
-            "1" { $id = Read-Host "ID do pacote (ex: Microsoft.VSCode)"; Install-App -Id $id; Wait-KeyPress }
-            "2" { Update-AllApps; Wait-KeyPress }
-            "3" { Uninstall-Bloat; Wait-KeyPress }
-            "4" { return }
-            default { Write-Host "Opção inválida." -ForegroundColor Red; Start-Sleep 1 }
-        }
-    }
-}
-
-function Invoke-ProfileMenu {
-    while ($true) {
-        Clear-Host
-        Write-Host "========================================" -ForegroundColor Cyan
-        Write-Host "  PERFIS DE OTIMIZAÇÃO" -ForegroundColor Cyan
-        Write-Host "========================================" -ForegroundColor Cyan
-        Write-Host "`n  1. Gamer"
-        Write-Host "  2. Developer"
-        Write-Host "  3. Server"
-        Write-Host "  4. BatterySaver"
-        Write-Host "  5. Default (Balanceado)"
-        Write-Host "  6. Voltar"
-        Write-Host "`n========================================" -ForegroundColor Cyan
-        $c = Read-Host "Escolha"
-        $c = $c -replace '\s+',''
-        switch ($c) {
-            "1" { Set-WMSProfile -Profile Gamer; Wait-KeyPress }
-            "2" { Set-WMSProfile -Profile Developer; Wait-KeyPress }
-            "3" { Set-WMSProfile -Profile Server; Wait-KeyPress }
-            "4" { Set-WMSProfile -Profile BatterySaver; Wait-KeyPress }
-            "5" { Set-WMSProfile -Profile Default; Wait-KeyPress }
-            "6" { return }
-            default { Write-Host "Opção inválida." -ForegroundColor Red; Start-Sleep 1 }
-        }
-    }
-}
-
-function Invoke-HardeningMenu {
-    while ($true) {
-        Clear-Host
-        Write-Host "========================================" -ForegroundColor Cyan
-        Write-Host "  HARDENING DE SEGURANÇA" -ForegroundColor Cyan
-        Write-Host "========================================" -ForegroundColor Cyan
-        Write-Host "`n  1. Baseline"
-        Write-Host "  2. Strict"
-        Write-Host "  3. Voltar"
-        Write-Host "`n========================================" -ForegroundColor Cyan
-        $c = Read-Host "Escolha"
-        $c = $c -replace '\s+',''
-        switch ($c) {
-            "1" { Invoke-Hardening -Level Baseline; Wait-KeyPress }
-            "2" { Invoke-Hardening -Level Strict; Wait-KeyPress }
-            "3" { return }
-            default { Write-Host "Opção inválida." -ForegroundColor Red; Start-Sleep 1 }
-        }
-    }
-}
-
-function Wait-KeyPress {
-    Write-Host "`nPressione qualquer tecla para continuar..." -ForegroundColor DarkGray
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }
 
 # Iniciar o menu principal

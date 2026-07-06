@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Modulo de Limpeza Profunda do Sistema.
 .DESCRIPTION
@@ -21,7 +21,7 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 function Invoke-DiskCleanup {
     Write-Host "`n[>] Disk Cleanup completo (cleanmgr)..." -ForegroundColor Yellow
     try {
-        # Pré-configurar via registro todas as categorias do cleanmgr (sageset:99)
+        # PrÃ©-configurar via registro todas as categorias do cleanmgr (sageset:99)
         $cleanupKey = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches"
         if (Test-Path $cleanupKey) {
             Get-ChildItem $cleanupKey | ForEach-Object {
@@ -30,8 +30,8 @@ function Invoke-DiskCleanup {
         }
         Write-Host "      [INFO] Executando cleanmgr (abra e feche se uma janela aparecer)..." -ForegroundColor Cyan
         $proc = Start-Process -FilePath "cleanmgr.exe" -ArgumentList "/sagerun:99" -Wait -PassThru -NoNewWindow
-        Write-Host "      [OK] Disk Cleanup concluido." -ForegroundColor Green
-        Write-Log "Disk Cleanup (cleanmgr sagerun:99) concluido." "SUCCESS"
+        Write-Host "      [OK] Disk Cleanup concluído." -ForegroundColor Green
+        Write-Log "Disk Cleanup (cleanmgr sagerun:99) concluído." "SUCCESS"
     } catch {
         Write-Host "      [ERRO] Falha no Disk Cleanup: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
         Write-Log "Falha no Disk Cleanup: $_" "ERROR"
@@ -56,7 +56,7 @@ function Clear-RecycleBinSafe {
 function Remove-WindowsOldAndResetBase {
     Write-Host "`n[>] Windows.old + ResetBase (DISM)..." -ForegroundColor Yellow
     Write-Host "      [AVISO] Remove versoes antigas de componentes. APOS isto, atualizacoes" -ForegroundColor Red
-    Write-Host "      [AVISO] NAO poderão mais ser desfeitas. Recomendado em sistema estavel." -ForegroundColor Red
+    Write-Host "      [AVISO] NAO poderÃ£o mais ser desfeitas. Recomendado em sistema estavel." -ForegroundColor Red
     $confirm = Read-Host "      Continuar com ResetBase? (S/N)"
     if ($confirm -ne 'S' -and $confirm -ne 's') {
         Write-Host "      [INFO] ResetBase cancelado." -ForegroundColor Cyan
@@ -76,8 +76,8 @@ function Remove-WindowsOldAndResetBase {
         $after = Get-DiskFreeGB
         $freed = [Math]::Round($after - $before, 2)
         if ($proc.ExitCode -eq 0) {
-            Write-Host "      [OK] ResetBase concluido. Espaco livre: ~$freed GB liberado(s)." -ForegroundColor Green
-            Write-Log "DISM ResetBase concluido (~$freed GB)." "SUCCESS"
+            Write-Host "      [OK] ResetBase concluído. Espaco livre: ~$freed GB liberado(s)." -ForegroundColor Green
+            Write-Log "DISM ResetBase concluído (~$freed GB)." "SUCCESS"
         } else {
             Write-Host "      [ERRO] DISM ResetBase falhou (codigo $($proc.ExitCode))." -ForegroundColor Red
             Write-Log "DISM ResetBase falhou (codigo $($proc.ExitCode))." "ERROR"
@@ -263,7 +263,7 @@ function Invoke-DeepCleaning {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "  LIMPEZA PROFUNDA DO SISTEMA" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "`nSelecione uma opcao:" -ForegroundColor Cyan
+    Write-Host "`nSelecione uma Opção:" -ForegroundColor Cyan
     Write-Host "  1. Disk Cleanup completo (cleanmgr)"
     Write-Host "  2. Esvaziar Lixeira"
     Write-Host "  3. Windows.old + ResetBase (libera muito espaco)"
@@ -281,7 +281,7 @@ function Invoke-DeepCleaning {
     $choice = $choice -replace '\s+', ''
 
     if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max 11)) {
-        Write-Host "Opcao invalida. Digite um numero entre 1 e 11." -ForegroundColor Red
+        Write-Host "Opção inválida. Digite um numero entre 1 e 11." -ForegroundColor Red
         Start-Sleep -Seconds 2
         return
     }
@@ -317,3 +317,5 @@ function Invoke-DeepCleaning {
 
     if ($choice -eq "11") { return }
 }
+
+Export-ModuleMember -Function *

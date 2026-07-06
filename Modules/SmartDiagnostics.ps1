@@ -1,14 +1,14 @@
-<#
+﻿<#
 .SYNOPSIS
-    Módulo de diagnóstico SMART dos discos.
+    MÃ³dulo de diagnÃ³stico SMART dos discos.
 .DESCRIPTION
-    Este módulo executa diagnóstico SMART dos discos físicos.
+    Este mÃ³dulo executa diagnÃ³stico SMART dos discos fÃ­sicos.
 #>
 
 # Importar SecurityHelper
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\SecurityHelper.ps1"
 
-# NOTA: A verificação de administrador é feita UMA ÚNICA vez em MainMenu.ps1.
+# NOTA: A verificaÃ§Ã£o de administrador Ã© feita UMA ÃšNICA vez em MainMenu.ps1.
 
 function Invoke-SmartDiagnostics {
     Write-Host "========================================" -ForegroundColor Cyan
@@ -49,10 +49,12 @@ function Invoke-SmartDiagnostics {
     }
     
     Write-Host "`n========================================" -ForegroundColor Green
-    Write-Host "  DIAGNOSTICO SMART CONCLUIDO!" -ForegroundColor Green
+    Write-Host "  DIAGNOSTICO SMART concluído!" -ForegroundColor Green
     Write-Host "========================================" -ForegroundColor Green
     
     Update-WMSHistory -Key "LastSmartDiag" -Value (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-    Write-Log "Diagnostico SMART concluido." "SUCCESS"
+    Write-Log "Diagnostico SMART concluído." "SUCCESS"
 }
 
+
+Export-ModuleMember -Function *

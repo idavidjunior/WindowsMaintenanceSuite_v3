@@ -2,5 +2,6 @@
     "LastUltimate":  "Never",
     "LastEssential":  "Never",
     "LastSmartDiag":  "2026-06-29 15:51:49",
-    "LastDeepDiag":  "2026-07-04 12:34:47"
+    "LastDeepDiag":  "2026-07-04 12:34:47",
+    "TestKey":  "test_value"
 }

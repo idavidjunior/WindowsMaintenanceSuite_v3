@@ -48,3 +48,32 @@ function Set-WMSProfile {
         }
     }
 }
+
+function Invoke-ProfileMenu {
+    while ($true) {
+        Clear-Host
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  PERFIS DE OTIMIZAÇÃO" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "`n  1. Gamer"
+        Write-Host "  2. Developer"
+        Write-Host "  3. Server"
+        Write-Host "  4. BatterySaver"
+        Write-Host "  5. Default (Balanceado)"
+        Write-Host "  6. Voltar"
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        $c = Read-Host "Escolha"
+        $c = $c -replace '\s+',''
+        switch ($c) {
+            "1" { Set-WMSProfile -Profile Gamer; Wait-KeyPress }
+            "2" { Set-WMSProfile -Profile Developer; Wait-KeyPress }
+            "3" { Set-WMSProfile -Profile Server; Wait-KeyPress }
+            "4" { Set-WMSProfile -Profile BatterySaver; Wait-KeyPress }
+            "5" { Set-WMSProfile -Profile Default; Wait-KeyPress }
+            "6" { return }
+            default { Write-Host "Opção inválida." -ForegroundColor Red; Start-Sleep 1 }
+        }
+    }
+}
+
+Export-ModuleMember -Function *

@@ -1,14 +1,14 @@
-<#
+﻿<#
 .SYNOPSIS
-    Módulo de manutenção essencial do sistema.
+    MÃ³dulo de manutenÃ§Ã£o essencial do sistema.
 .DESCRIPTION
-    Este módulo executa tarefas básicas de manutenção do sistema Windows.
+    Este mÃ³dulo executa tarefas bÃ¡sicas de manutenÃ§Ã£o do sistema Windows.
 #>
 
 # Importar SecurityHelper
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\SecurityHelper.ps1"
 
-# NOTA: A verificação de administrador é feita UMA ÚNICA vez em MainMenu.ps1.
+# NOTA: A verificaÃ§Ã£o de administrador Ã© feita UMA ÃšNICA vez em MainMenu.ps1.
 # Chamar Require-Administrator aqui (escopo de topo) fazia com que o dot-source
 # disparasse 'exit 1' e fechasse todo o PowerShell antes do menu aparecer.
 
@@ -20,16 +20,16 @@ function Invoke-EssentialMaintenance {
 
     $freeBefore = Get-DiskFreeGB
     
-    # Criar Ponto de Restauracao (Seguranca)
-    Write-Host "`n[1/7] Criando Ponto de Restauração do Sistema..." -ForegroundColor Yellow
-    Write-Log "Criando Ponto de Restauracao do Sistema..." "INFO"
+    # Criar Ponto de restauração (Seguranca)
+    Write-Host "`n[1/7] Criando Ponto de RestauraÃ§Ã£o do Sistema..." -ForegroundColor Yellow
+    Write-Log "Criando Ponto de restauração do Sistema..." "INFO"
     try {
         Checkpoint-Computer -Description "WMS_Essential_Maintenance" -RestorePointType "MODIFY_SETTINGS" -ErrorAction Stop
-        Write-Host "      [OK] Ponto de restauracao criado com sucesso." -ForegroundColor Green
-        Write-Log "Ponto de restauracao criado com sucesso." "SUCCESS"
+        Write-Host "      [OK] Ponto de restauração criado com sucesso." -ForegroundColor Green
+        Write-Log "Ponto de restauração criado com sucesso." "SUCCESS"
     } catch {
-        Write-Host "      [AVISO] Falha ao criar ponto de restauracao O servico pode estar desativado." -ForegroundColor Yellow
-        Write-Log "Falha ao criar ponto de restauracao. O servico pode estar desativado." "WARNING"
+        Write-Host "      [AVISO] Falha ao criar ponto de restauração O servico pode estar desativado." -ForegroundColor Yellow
+        Write-Log "Falha ao criar ponto de restauração. O servico pode estar desativado." "WARNING"
     }
     
     # 1. Limpeza de Arquivos Temporarios
@@ -93,8 +93,8 @@ function Invoke-EssentialMaintenance {
     Write-Log "Executando SFC /scannow (Isso pode demorar)..." "INFO"
     $sfcProcess = Start-Process -FilePath "sfc.exe" -ArgumentList "/scannow" -Wait -PassThru -NoNewWindow
     if ($sfcProcess.ExitCode -eq 0) {
-        Write-Host "      [OK] SFC concluido com sucesso - nenhum problema encontrado." -ForegroundColor Green
-        Write-Log "SFC concluido com sucesso." "SUCCESS"
+        Write-Host "      [OK] SFC concluído com sucesso - nenhum problema encontrado." -ForegroundColor Green
+        Write-Log "SFC concluído com sucesso." "SUCCESS"
     } elseif ($sfcProcess.ExitCode -eq 1) {
         Write-Host "      [AVISO] SFC encontrou erros mas conseguiu corrigi-los." -ForegroundColor Yellow
         Write-Log "SFC encontrou erros mas conseguiu corrigi-los." "WARNING"
@@ -108,8 +108,8 @@ function Invoke-EssentialMaintenance {
     Write-Log "Executando DISM RestoreHealth..." "INFO"
     $dismProcess = Start-Process -FilePath "dism.exe" -ArgumentList "/Online /Cleanup-Image /RestoreHealth" -Wait -PassThru -NoNewWindow
     if ($dismProcess.ExitCode -eq 0) {
-        Write-Host "      [OK] DISM concluido com sucesso." -ForegroundColor Green
-        Write-Log "DISM concluido com sucesso." "SUCCESS"
+        Write-Host "      [OK] DISM concluído com sucesso." -ForegroundColor Green
+        Write-Log "DISM concluído com sucesso." "SUCCESS"
     } else {
         Write-Host "      [ERRO] DISM falhou ao restaurar a imagem." -ForegroundColor Red
         Write-Log "DISM falhou ao restaurar a imagem." "ERROR"
@@ -120,11 +120,11 @@ function Invoke-EssentialMaintenance {
     Write-Log "Executando CHKDSK /scan..." "INFO"
     $chkdskResult = chkdsk /scan
     if ($chkdskResult -match "nao foram encontrados erros") {
-        Write-Host "      [OK] CHKDSK concluido - nenhum erro encontrado." -ForegroundColor Green
-        Write-Log "CHKDSK concluido - nenhum erro encontrado." "SUCCESS"
+        Write-Host "      [OK] CHKDSK concluído - nenhum erro encontrado." -ForegroundColor Green
+        Write-Log "CHKDSK concluído - nenhum erro encontrado." "SUCCESS"
     } else {
-        Write-Host "      [AVISO] CHKDSK concluido - verifique o resultado acima." -ForegroundColor Yellow
-        Write-Log "CHKDSK concluido." "INFO"
+        Write-Host "      [AVISO] CHKDSK concluído - verifique o resultado acima." -ForegroundColor Yellow
+        Write-Log "CHKDSK concluído." "INFO"
     }
     
     # 7. Otimizacao de Disco
@@ -147,3 +147,5 @@ function Invoke-EssentialMaintenance {
     Write-Log "Manutencao Essencial concluida com sucesso! (~$freed GB liberados)" "SUCCESS"
 }
 
+
+Export-ModuleMember -Function *

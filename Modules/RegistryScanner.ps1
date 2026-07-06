@@ -416,3 +416,5 @@ function Invoke-RegistryScan {
         Clear-RegistryJunk -Findings $findings -DryRun
     }
 }
+
+Export-ModuleMember -Function *

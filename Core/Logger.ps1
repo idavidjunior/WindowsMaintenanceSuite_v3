@@ -1,3 +1,5 @@
+. "$PSScriptRoot\ConfigManager.ps1"
+
 function Write-Log {
     param (
         [Parameter(Mandatory=$true)]
@@ -7,8 +9,6 @@ function Write-Log {
         [string]$Level = "INFO"
     )
 
-    # Importar ConfigManager para obter configurações
-    . "$PSScriptRoot\ConfigManager.ps1"
     $config = Get-WMSConfig
     $retentionDays = if ($config.LogRetentionDays) { $config.LogRetentionDays } else { 7 }
 

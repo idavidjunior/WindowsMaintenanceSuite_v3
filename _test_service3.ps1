@@ -1,7 +1,8 @@
 $ErrorActionPreference = 'Stop'
-. "c:\Users\Playtec-bancada\Desktop\Downloads\WindowsMaintenanceSuite_v3-main-extracted\WindowsMaintenanceSuite_v3-main\WindowsMaintenanceSuite\Core\SecurityHelper.ps1"
-. "c:\Users\Playtec-bancada\Desktop\Downloads\WindowsMaintenanceSuite_v3-main-extracted\WindowsMaintenanceSuite_v3-main\WindowsMaintenanceSuite\Core\Logger.ps1"
-. "c:\Users\Playtec-bancada\Desktop\Downloads\WindowsMaintenanceSuite_v3-main-extracted\WindowsMaintenanceSuite_v3-main\WindowsMaintenanceSuite\Modules\SystemLightweight.ps1"
+$projectRoot = Split-Path -Parent $PSScriptRoot
+. "$projectRoot\Core\SecurityHelper.ps1"
+. "$projectRoot\Core\Logger.ps1"
+. "$projectRoot\Modules\SystemLightweight.ps1"
 
 Write-Host "=== Helper tests ==="
 foreach ($name in @('DiagTrack','Spooler','SysMain')) {

@@ -209,3 +209,5 @@ function Invoke-PerformanceMonitor {
         '3' { return }
     }
 }
+
+Export-ModuleMember -Function *

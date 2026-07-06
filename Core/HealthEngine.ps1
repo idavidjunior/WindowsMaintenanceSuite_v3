@@ -16,7 +16,7 @@ function Get-SystemHealthScore {
     # (Simulação simplificada para o menu inicial)
     
     # 3. Storage Availability (15%)
-    $Disks = Get-Volume | Where-Object { $_.DriveLetter -ne $null }
+    $Disks = Get-Volume | Where-Object { $_.DriveLetter -ne $null -and $_.Size -gt 0 }
     foreach ($Disk in $Disks) {
         $FreePercent = ($Disk.SizeRemaining / $Disk.Size) * 100
         if ($FreePercent -lt 10) { $Score -= 5; $Deductions += "Pouco espaço no disco $($Disk.DriveLetter)" }

@@ -53,7 +53,11 @@ function Get-WMSHistory {
 function Update-WMSHistory {
     param ($Key, $Value)
     $History = Get-WMSHistory
-    $History.$Key = $Value
+    if ($History.PSObject.Properties.Name -notcontains $Key) {
+        $History | Add-Member -NotePropertyName $Key -NotePropertyValue $Value -Force
+    } else {
+        $History.$Key = $Value
+    }
     $History | ConvertTo-Json | Set-Content $HistoryPath
 }
 

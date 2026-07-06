@@ -1,14 +1,14 @@
-<#
+﻿<#
 .SYNOPSIS
-    Módulo de manutenção completa do sistema.
+    MÃ³dulo de manutenÃ§Ã£o completa do sistema.
 .DESCRIPTION
-    Este módulo executa tarefas avançadas de manutenção do sistema Windows.
+    Este mÃ³dulo executa tarefas avanÃ§adas de manutenÃ§Ã£o do sistema Windows.
 #>
 
 # Importar SecurityHelper
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\SecurityHelper.ps1"
 
-# NOTA: A verificação de administrador é feita UMA ÚNICA vez em MainMenu.ps1.
+# NOTA: A verificaÃ§Ã£o de administrador Ã© feita UMA ÃšNICA vez em MainMenu.ps1.
 
 function Invoke-UltimateMaintenance {
     Write-Host "========================================" -ForegroundColor Cyan
@@ -18,16 +18,16 @@ function Invoke-UltimateMaintenance {
 
     $freeBefore = Get-DiskFreeGB
     
-    # Criar Ponto de Restauracao (Seguranca)
-    Write-Host "`n[0/4] Criando Ponto de Restauracao do Sistema..." -ForegroundColor Yellow
-    Write-Log "Criando Ponto de Restauracao do Sistema..." "INFO"
+    # Criar Ponto de restauração (Seguranca)
+    Write-Host "`n[0/4] Criando Ponto de restauração do Sistema..." -ForegroundColor Yellow
+    Write-Log "Criando Ponto de restauração do Sistema..." "INFO"
     try {
         Checkpoint-Computer -Description "WMS_Ultimate_Maintenance" -RestorePointType "MODIFY_SETTINGS" -ErrorAction Stop
-        Write-Host "      [OK] Ponto de restauracao criado com sucesso." -ForegroundColor Green
-        Write-Log "Ponto de restauracao criado com sucesso." "SUCCESS"
+        Write-Host "      [OK] Ponto de restauração criado com sucesso." -ForegroundColor Green
+        Write-Log "Ponto de restauração criado com sucesso." "SUCCESS"
     } catch {
-        Write-Host "      [AVISO] Falha ao criar ponto de restauracao O servico pode estar desativado." -ForegroundColor Yellow
-        Write-Log "Falha ao criar ponto de restauracao. O servico pode estar desativado." "WARNING"
+        Write-Host "      [AVISO] Falha ao criar ponto de restauração O servico pode estar desativado." -ForegroundColor Yellow
+        Write-Log "Falha ao criar ponto de restauração. O servico pode estar desativado." "WARNING"
     }
     
     # Executa a Essencial primeiro
@@ -63,7 +63,7 @@ function Invoke-UltimateMaintenance {
         Write-Log "Falha ao limpar a Loja de Componentes." "ERROR"
     }
     
-    # 3. Limpeza de Logs de Eventos (OPT-IN, com backup dos logs críticos)
+    # 3. Limpeza de Logs de Eventos (OPT-IN, com backup dos logs crÃ­ticos)
     Write-Host "`n[4/4] Limpeza de Logs de Eventos do Windows..." -ForegroundColor Yellow
     Write-Log "Oferecendo limpeza de Logs de Eventos do Windows..." "INFO"
     $cleanEvents = Read-Host "`nLimpar TODOS os logs de eventos do Windows? Isso apaga historico de erros/eventos (S/N)"
@@ -112,3 +112,5 @@ function Invoke-UltimateMaintenance {
     Write-Log "Manutencao Completa concluida com sucesso! (~$freed GB liberados)" "SUCCESS"
 }
 
+
+Export-ModuleMember -Function *

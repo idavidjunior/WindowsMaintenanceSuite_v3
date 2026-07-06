@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Atalhos para ferramentas nativas do Windows ainda nao cobertas pela suite.
 .DESCRIPTION
@@ -116,7 +116,7 @@ function Invoke-CheckDiskRepair {
     $drive = Read-Host "`nDigite a letra do drive a verificar (ex: C)"
     $drive = ($drive -replace '[^a-zA-Z]', '').ToUpper()
     if ([string]::IsNullOrWhiteSpace($drive)) {
-        Write-Host "      Letra de drive invalida. Abortando." -ForegroundColor Red
+        Write-Host "      Letra de drive inválida. Abortando." -ForegroundColor Red
         return
     }
     $driveLetter = "$drive`:"
@@ -166,8 +166,8 @@ function Invoke-WingetUpgradeAll {
 
     Write-Log "Iniciando winget upgrade --all (usuario confirmou apos preview)." "INFO"
     & winget.exe upgrade --all --silent --accept-source-agreements --accept-package-agreements
-    Write-Host "      [OK] winget upgrade --all concluido." -ForegroundColor Green
-    Write-Log "Winget upgrade --all concluido." "SUCCESS"
+    Write-Host "      [OK] winget upgrade --all concluído." -ForegroundColor Green
+    Write-Log "Winget upgrade --all concluído." "SUCCESS"
 }
 
 # ---------------------------------------------------------------------------
@@ -196,7 +196,7 @@ function Invoke-QuickToolsMenu {
     $choice = $choice -replace '\s+', ''
 
     if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max 12)) {
-        Write-Host "Opcao invalida." -ForegroundColor Red
+        Write-Host "Opção inválida." -ForegroundColor Red
         Start-Sleep -Seconds 2
         return
     }
@@ -216,3 +216,5 @@ function Invoke-QuickToolsMenu {
         "12" { return }
     }
 }
+
+Export-ModuleMember -Function *

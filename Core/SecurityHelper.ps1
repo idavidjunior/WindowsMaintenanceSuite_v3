@@ -109,9 +109,9 @@ function Mask-MacAddress {
         return $MacAddress
     }
     
-    # Mascarar mantendo apenas os primeiros 4 caracteres
-    if ($MacAddress.Length -ge 4) {
-        return $MacAddress.Substring(0, 4) + ":XX:XX:XX:XX"
+    # Mascarar mantendo apenas os primeiros 5 caracteres (ex: "00:1A")
+    if ($MacAddress.Length -ge 5) {
+        return $MacAddress.Substring(0, 5) + ":XX:XX:XX:XX"
     }
     return "XX:XX:XX:XX:XX:XX"
 }
@@ -194,12 +194,12 @@ function Invoke-WithRollback {
     )
 
     try {
-        & $ScriptBlock
+        & $ScriptBlock | Out-Null
         return $true
     } catch {
         Write-Host "Erro detectado. Iniciando rollback..." -ForegroundColor Yellow
         try {
-            & $RollbackScript
+            & $RollbackScript | Out-Null
             Write-Host "Rollback concluído com sucesso." -ForegroundColor Green
         } catch {
             Write-Host "Erro durante rollback: $_" -ForegroundColor Red
@@ -257,4 +257,9 @@ function Convert-PathToSafeFileName {
     param ([string]$Path)
     $safe = ($Path -replace '[\\/: *?"<>|]', '_')
     return $safe.Trim('_')
+}
+
+function Wait-KeyPress {
+    Write-Host "`nPressione qualquer tecla para continuar..." -ForegroundColor DarkGray
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }

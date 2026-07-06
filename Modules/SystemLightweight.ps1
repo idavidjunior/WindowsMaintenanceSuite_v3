@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Modulo Sistema Leve - deixa o Windows mais leve (boot + RAM).
 .DESCRIPTION
@@ -481,7 +481,7 @@ function Manage-NonEssentialServices {
         if ($sel -eq "0") { return }
 
         if (-not (Test-ValidNumericInput -Value $sel -Min 1 -Max $available.Count)) {
-            Write-Host "      [AVISO] Escolha invalida. Digite um numero entre 0 e $($available.Count)." -ForegroundColor Red
+            Write-Host "      [AVISO] Escolha inválida. Digite um numero entre 0 e $($available.Count)." -ForegroundColor Red
             continue
         }
 
@@ -529,7 +529,7 @@ function Invoke-SystemLightweight {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "  SISTEMA LEVE" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "`nSelecione uma opcao:" -ForegroundColor Cyan
+    Write-Host "`nSelecione uma Opção:" -ForegroundColor Cyan
     Write-Host "  1. Gerenciador de Inicializacao (boot)"
     Write-Host "  2. Auditor de Tarefas Agendadas"
     Write-Host "  3. Desinstalador Inteligente (por tamanho)"
@@ -542,7 +542,7 @@ function Invoke-SystemLightweight {
     $choice = $choice -replace '\s+', ''
 
     if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max 6)) {
-        Write-Host "Opcao invalida. Digite um numero entre 1 e 6." -ForegroundColor Red
+        Write-Host "Opção inválida. Digite um numero entre 1 e 6." -ForegroundColor Red
         Start-Sleep -Seconds 2
         return
     }
@@ -556,3 +556,5 @@ function Invoke-SystemLightweight {
         "6" { return }
     }
 }
+
+Export-ModuleMember -Function *
