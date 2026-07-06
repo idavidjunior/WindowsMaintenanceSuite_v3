@@ -175,8 +175,8 @@ function Get-RegistryJunkReport {
                     foreach ($v in $valueNames) {
                         $i++
                         if ($total -gt 0) {
-                            Write-Progress -Activity $baseActivity -Status "$($cat.Name): $($v.Name)" `
-                                -PercentComplete ([int]([Math]::Round((($catIndex - 1) / $totalCategories) * 100 + ($i / $total) * (100 / $totalCategories))
+                            $pct = [int]([Math]::Round((($catIndex - 1) / $totalCategories) * 100 + ($i / $total) * (100 / $totalCategories)))
+                            Write-Progress -Activity $baseActivity -Status "$($cat.Name): $($v.Name)" -PercentComplete $pct
                         }
                         $checkTarget = if ($cat.ValueNameIsPath) { $v.Name } else { $v.Value }
                         if ([string]::IsNullOrWhiteSpace($checkTarget)) { continue }
@@ -201,8 +201,8 @@ function Get-RegistryJunkReport {
                     foreach ($key in $subKeys) {
                         $i++
                         if ($total -gt 0) {
-                            Write-Progress -Activity $baseActivity -Status "$($cat.Name): $($key.PSChildName)" `
-                                -PercentComplete [int](($catIndex - 1) / $totalCategories * 100 + ($i / $total) * (100 / $totalCategories))
+                            $pct = [int](($catIndex - 1) / $totalCategories * 100 + ($i / $total) * (100 / $totalCategories))
+                            Write-Progress -Activity $baseActivity -Status "$($cat.Name): $($key.PSChildName)" -PercentComplete $pct
                         }
                         $fullPath = $key.PSPath
                         if (Test-ExcludedPath -Path $fullPath) { continue }
