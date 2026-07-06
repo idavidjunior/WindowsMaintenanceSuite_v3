@@ -209,9 +209,21 @@ function Show-TweaksMenu {
     Write-TweakMenuOption -Index 17 -Label "Desativar Widgets/Chat/People na taskbar" -Applied (Test-TaskbarExtrasDisabled)
     Write-TweakMenuOption -Index 18 -Label "Desativar conteudo sugerido, dicas e Timeline" -Applied (Test-SuggestedContentDisabled)
     Write-TweakMenuOption -Index 19 -Label "Desativar rastreamento de localizacao (Privacidade)" -Applied (Test-LocationTrackingDisabled)
-    Write-TweakMenuOption -Index 20 -Label "Aplicar TODOS os ajustes acima" -Applied $false
-    Write-TweakMenuOption -Index 21 -Label "Verificar status dos tweaks aplicados" -Applied $false
-    Write-TweakMenuOption -Index 22 -Label "Voltar ao Menu Principal" -Applied $false
+    Write-TweakMenuOption -Index 20 -Label "Desativar Fast Startup (Hiberboot)" -Applied (Test-FastStartupDisabled)
+    Write-TweakMenuOption -Index 21 -Label "Desativar OneDrive" -Applied (Test-OneDriveDisabled)
+    Write-TweakMenuOption -Index 22 -Label "Desativar Xbox Game Bar / Game Mode" -Applied (Test-XboxGameBarDisabled)
+    Write-TweakMenuOption -Index 23 -Label "Desativar Reinicio Automatico do Windows Update" -Applied (Test-AutoRebootDisabled)
+    Write-TweakMenuOption -Index 24 -Label "'Este Computador' como padrao no Explorer" -Applied (Test-ThisPCDefault)
+    Write-TweakMenuOption -Index 25 -Label "Desativar Aceleracao do Mouse (gamers)" -Applied (Test-MouseAccelerationDisabled)
+    Write-TweakMenuOption -Index 26 -Label "Desativar Teclas de Acessibilidade (Sticky/Filter Keys)" -Applied (Test-AccessibilityKeysDisabled)
+    Write-TweakMenuOption -Index 27 -Label "Desativar Suspensao Seletiva de USB" -Applied (Test-USBSelectiveSuspendDisabled)
+    Write-TweakMenuOption -Index 28 -Label "Mostrar Segundos no Relogio da Barra de Tarefas" -Applied (Test-SecondsInTaskbar)
+    Write-TweakMenuOption -Index 29 -Label "Desativar Experiencias do Consumidor (Sugestoes)" -Applied (Test-ConsumerExperiencesDisabled)
+    Write-TweakMenuOption -Index 30 -Label "Desativar Atualizacao Automatica de Drivers" -Applied (Test-AutoDriverUpdateDisabled)
+    Write-TweakMenuOption -Index 31 -Label "Desativar Sincronizacao da Area de Transferencia (Cloud)" -Applied (Test-CloudClipboardDisabled)
+    Write-TweakMenuOption -Index 32 -Label "Aplicar TODOS os ajustes acima" -Applied $false
+    Write-TweakMenuOption -Index 33 -Label "Verificar status dos tweaks aplicados" -Applied $false
+    Write-TweakMenuOption -Index 34 -Label "Voltar ao Menu Principal" -Applied $false
 
     Write-Host "`n========================================" -ForegroundColor Cyan
 }
@@ -784,6 +796,273 @@ function Disable-LocationTracking {
     }
 }
 
+# ---------------------------------------------------------------------------
+# NOVOS TWEAKS 20-31
+# ---------------------------------------------------------------------------
+
+# 20. Desativar Fast Startup (Hiberboot)
+function Disable-FastStartup {
+    Write-Host "`n[20] Desativando Fast Startup (inicializacao hibrida)..." -ForegroundColor Yellow
+    try {
+        $current = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power' -Name 'HiberbootEnabled' -ErrorAction SilentlyContinue).HiberbootEnabled
+        Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power' -Name 'HiberbootEnabled' -Value 0 -Type DWord -Force
+        Write-Host "      [OK] Fast Startup desativado (alteracao valera apos reinicio)." -ForegroundColor Green
+        Write-Log "Fast Startup desativado." "SUCCESS"
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao desativar Fast Startup: $_" "ERROR"
+    }
+}
+
+# 21. Desativar OneDrive
+function Disable-OneDrive {
+    Write-Host "`n[21] Bloqueando OneDrive completamente..." -ForegroundColor Yellow
+    try {
+        $policiesPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\OneDrive'
+        if (-not (Test-Path $policiesPath)) { New-Item -Path $policiesPath -Force | Out-Null }
+        Set-ItemProperty -Path $policiesPath -Name 'DisableFileSyncNGSC' -Value 1 -Type DWord -Force
+        Set-ItemProperty -Path $policiesPath -Name 'OneDriveDisabled' -Value 1 -Type DWord -Force
+        # Remover da inicializacao
+        Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'OneDriveSetup' -Force -ErrorAction SilentlyContinue
+        # Parar processo se estiver rodando
+        Stop-Process -Name 'OneDrive' -Force -ErrorAction SilentlyContinue
+        Write-Host "      [OK] OneDrive bloqueado via politica de grupo (reinicie para aplicar)." -ForegroundColor Green
+        Write-Log "OneDrive desativado." "SUCCESS"
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao desativar OneDrive: $_" "ERROR"
+    }
+}
+
+# 22. Desativar Xbox Game Bar / Game Mode
+function Disable-XboxGameBar {
+    Write-Host "`n[22] Desativando Xbox Game Bar e Game Mode..." -ForegroundColor Yellow
+    try {
+        $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\GameDVR'
+        if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
+        Set-ItemProperty -Path $key -Name 'AppCaptureEnabled' -Value 0 -Type DWord -Force
+        Set-ItemProperty -Path $key -Name 'HistoricalCaptureEnabled' -Value 0 -Type DWord -Force
+        $key2 = 'HKCU:\Software\Microsoft\GameBar'
+        if (-not (Test-Path $key2)) { New-Item -Path $key2 -Force | Out-Null }
+        Set-ItemProperty -Path $key2 -Name 'ShowStartupPanel' -Value 0 -Type DWord -Force
+        Set-ItemProperty -Path $key2 -Name 'AutoGameModeEnabled' -Value 0 -Type DWord -Force
+        Set-ItemProperty -Path $key2 -Name 'UseNagleForWMIDisabled' -Value 0 -Type DWord -Force
+        $key3 = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR'
+        if (-not (Test-Path $key3)) { New-Item -Path $key3 -Force | Out-Null }
+        Set-ItemProperty -Path $key3 -Name 'AllowGameDVR' -Value 0 -Type DWord -Force
+        Write-Host "      [OK] Xbox Game Bar e Game Mode desativados." -ForegroundColor Green
+        Write-Log "Xbox Game Bar/Game Mode desativados." "SUCCESS"
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao desativar Xbox Game Bar: $_" "ERROR"
+    }
+}
+
+# 23. Desativar Reinicio Automatico do Windows Update
+function Disable-AutoReboot {
+    Write-Host "`n[23] Desativando reinicio automatico do Windows Update..." -ForegroundColor Yellow
+    try {
+        $key = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
+        if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
+        Set-ItemProperty -Path $key -Name 'NoAutoRebootWithLoggedOnUsers' -Value 1 -Type DWord -Force
+        Set-ItemProperty -Path $key -Name 'AlwaysAutoRebootAtScheduledTime' -Value 0 -Type DWord -Force
+        Set-ItemProperty -Path $key -Name 'ScheduledInstallDay' -Value 0 -Type DWord -Force
+        Write-Host "      [OK] Reinicio automatico desativado (voce decide quando reiniciar)." -ForegroundColor Green
+        Write-Log "Reinicio automatico do Windows Update desativado." "SUCCESS"
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao desativar reinicio automatico: $_" "ERROR"
+    }
+}
+
+# 24. "Este Computador" como padrao no Explorer
+function Set-ThisPCDefault {
+    Write-Host "`n[24] Configurando 'Este Computador' como padrao no Explorador de Arquivos..." -ForegroundColor Yellow
+    try {
+        $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+        Set-ItemProperty -Path $key -Name 'LaunchTo' -Value 1 -Type DWord -Force
+        Write-Host "      [OK] Explorador de Arquivos abrira em 'Este Computador'." -ForegroundColor Green
+        Write-Log "Explorer padrao alterado para 'Este Computador'." "SUCCESS"
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao configurar Explorer padrao: $_" "ERROR"
+    }
+}
+
+# 25. Desativar Aceleracao do Mouse (Enhance Pointer Precision)
+function Disable-MouseAcceleration {
+    Write-Host "`n[25] Desativando aceleracao do mouse (Enhance Pointer Precision)..." -ForegroundColor Yellow
+    try {
+        $key = 'HKCU:\Control Panel\Mouse'
+        Set-ItemProperty -Path $key -Name 'MouseSpeed' -Value 0 -Force
+        Set-ItemProperty -Path $key -Name 'MouseThreshold1' -Value 0 -Force
+        Set-ItemProperty -Path $key -Name 'MouseThreshold2' -Value 0 -Force
+        Write-Host "      [OK] Aceleracao do mouse desativada (MouseSpeed=0)." -ForegroundColor Green
+        Write-Log "Aceleracao do mouse desativada." "SUCCESS"
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao desativar aceleracao do mouse: $_" "ERROR"
+    }
+}
+
+# 26. Desativar Teclas de Acessibilidade (Sticky/Filter/Toggle Keys)
+function Disable-AccessibilityKeys {
+    Write-Host "`n[26] Desativando teclas de acessibilidade (Sticky/Filter/Toggle Keys)..." -ForegroundColor Yellow
+    try {
+        $key = 'HKCU:\Control Panel\Accessibility\StickyKeys'
+        Set-ItemProperty -Path $key -Name 'Flags' -Value '506' -Force
+        $key2 = 'HKCU:\Control Panel\Accessibility\FilterKeys'
+        Set-ItemProperty -Path $key2 -Name 'Flags' -Value '122' -Force
+        $key3 = 'HKCU:\Control Panel\Accessibility\ToggleKeys'
+        Set-ItemProperty -Path $key3 -Name 'Flags' -Value '58' -Force
+        Write-Host "      [OK] Atalhos de teclas de acessibilidade desativados." -ForegroundColor Green
+        Write-Log "Teclas de acessibilidade desativadas." "SUCCESS"
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao desativar teclas de acessibilidade: $_" "ERROR"
+    }
+}
+
+# 27. Desativar Suspensao Seletiva de USB
+function Disable-USBSelectiveSuspend {
+    Write-Host "`n[27] Desativando suspensao seletiva de USB..." -ForegroundColor Yellow
+    try {
+        $key = 'HKLM:\SYSTEM\CurrentControlSet\Services\USB'
+        if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
+        Set-ItemProperty -Path $key -Name 'DisableSelectiveSuspend' -Value 1 -Type DWord -Force
+        $key2 = 'HKLM:\SYSTEM\CurrentControlSet\Control\Power'
+        Set-ItemProperty -Path $key2 -Name 'HwProfileKing' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+        Write-Host "      [OK] Suspensao seletiva de USB desativada." -ForegroundColor Green
+        Write-Log "USB Selective Suspend desativado." "SUCCESS"
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao desativar suspensao USB: $_" "ERROR"
+    }
+}
+
+# 28. Mostrar Segundos no Relogio da Barra de Tarefas
+function Show-SecondsInTaskbar {
+    Write-Host "`n[28] Ativando exibicao de segundos no relogio da barra de tarefas..." -ForegroundColor Yellow
+    try {
+        $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+        Set-ItemProperty -Path $key -Name 'ShowSecondsInSystemClock' -Value 1 -Type DWord -Force
+        Write-Host "      [OK] Segundos ativados no relogio da barra de tarefas (reinicie o explorer)." -ForegroundColor Green
+        Write-Log "Segundos no relogio da barra ativados." "SUCCESS"
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao ativar segundos no relogio: $_" "ERROR"
+    }
+}
+
+# 29. Desativar Experiencias do Consumidor (Sugestoes)
+function Disable-ConsumerExperiences {
+    Write-Host "`n[29] Desativando experiencias do consumidor (sugestoes, dicas, truques)..." -ForegroundColor Yellow
+    try {
+        $key = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent'
+        if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
+        Set-ItemProperty -Path $key -Name 'DisableWindowsConsumerFeatures' -Value 1 -Type DWord -Force
+        Set-ItemProperty -Path $key -Name 'DisableSoftLanding' -Value 1 -Type DWord -Force
+        $key2 = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'
+        if (-not (Test-Path $key2)) { New-Item -Path $key2 -Force | Out-Null }
+        Set-ItemProperty -Path $key2 -Name 'SubscribedContent-353694Enabled' -Value 0 -Type DWord -Force
+        Set-ItemProperty -Path $key2 -Name 'SubscribedContent-353696Enabled' -Value 0 -Type DWord -Force
+        Write-Host "      [OK] Experiencias do consumidor e sugestoes de apps desativadas." -ForegroundColor Green
+        Write-Log "Experiencias do consumidor desativadas." "SUCCESS"
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao desativar experiencias do consumidor: $_" "ERROR"
+    }
+}
+
+# 30. Desativar Atualizacao Automatica de Drivers
+function Disable-AutoDriverUpdate {
+    Write-Host "`n[30] Desativando atualizacao automatica de drivers via Windows Update..." -ForegroundColor Yellow
+    try {
+        $key = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Device Metadata'
+        if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
+        Set-ItemProperty -Path $key -Name 'PreventDeviceMetadataFromNetwork' -Value 1 -Type DWord -Force
+        $key2 = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DriverSearching'
+        if (-not (Test-Path $key2)) { New-Item -Path $key2 -Force | Out-Null }
+        Set-ItemProperty -Path $key2 -Name 'SearchOrderConfig' -Value 0 -Type DWord -Force
+        Set-ItemProperty -Path $key2 -Name 'DontPromptForWindowsUpdate' -Value 1 -Type DWord -Force
+        Set-ItemProperty -Path $key2 -Name 'DontSearchWindowsUpdate' -Value 1 -Type DWord -Force
+        Write-Host "      [OK] Atualizacao automatica de drivers desativada." -ForegroundColor Green
+        Write-Log "Atualizacao automatica de drivers desativada." "SUCCESS"
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao desativar atualizacao de drivers: $_" "ERROR"
+    }
+}
+
+# 31. Desativar Sincronizacao da Area de Transferencia na Nuvem
+function Disable-CloudClipboard {
+    Write-Host "`n[31] Desativando sincronizacao da area de transferencia com a nuvem..." -ForegroundColor Yellow
+    try {
+        $key = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System'
+        if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
+        Set-ItemProperty -Path $key -Name 'AllowCrossDeviceClipboard' -Value 0 -Type DWord -Force
+        $key2 = 'HKCU:\Software\Microsoft\Clipboard'
+        if (-not (Test-Path $key2)) { New-Item -Path $key2 -Force | Out-Null }
+        Set-ItemProperty -Path $key2 -Name 'CloudClipboardEnabled' -Value 0 -Type DWord -Force
+        Set-ItemProperty -Path $key2 -Name 'RoamingEnabled' -Value 0 -Type DWord -Force
+        Write-Host "      [OK] Sincronizacao da area de transferencia desativada." -ForegroundColor Green
+        Write-Log "Cloud clipboard desativado." "SUCCESS"
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao desativar cloud clipboard: $_" "ERROR"
+    }
+}
+
+# --- Funcoes de TESTE (status) para os novos tweaks 20-31 ---
+function Test-FastStartupDisabled {
+    $v = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power' -Name 'HiberbootEnabled' -ErrorAction SilentlyContinue).HiberbootEnabled
+    return ($v -eq 0)
+}
+function Test-OneDriveDisabled {
+    $v = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\OneDrive' -Name 'DisableFileSyncNGSC' -ErrorAction SilentlyContinue).DisableFileSyncNGSC
+    return ($v -eq 1)
+}
+function Test-XboxGameBarDisabled {
+    $v = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\GameBar' -Name 'ShowStartupPanel' -ErrorAction SilentlyContinue).ShowStartupPanel
+    return ($v -eq 0)
+}
+function Test-AutoRebootDisabled {
+    $v = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -Name 'NoAutoRebootWithLoggedOnUsers' -ErrorAction SilentlyContinue).NoAutoRebootWithLoggedOnUsers
+    return ($v -eq 1)
+}
+function Test-ThisPCDefault {
+    $v = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'LaunchTo' -ErrorAction SilentlyContinue).LaunchTo
+    return ($v -eq 1)
+}
+function Test-MouseAccelerationDisabled {
+    $v = (Get-ItemProperty -Path 'HKCU:\Control Panel\Mouse' -Name 'MouseSpeed' -ErrorAction SilentlyContinue).MouseSpeed
+    return ($v -eq 0)
+}
+function Test-AccessibilityKeysDisabled {
+    $v = (Get-ItemProperty -Path 'HKCU:\Control Panel\Accessibility\StickyKeys' -Name 'Flags' -ErrorAction SilentlyContinue).Flags
+    return ($v -eq '506')
+}
+function Test-USBSelectiveSuspendDisabled {
+    $v = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\USB' -Name 'DisableSelectiveSuspend' -ErrorAction SilentlyContinue).DisableSelectiveSuspend
+    return ($v -eq 1)
+}
+function Test-SecondsInTaskbar {
+    $v = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'ShowSecondsInSystemClock' -ErrorAction SilentlyContinue).ShowSecondsInSystemClock
+    return ($v -eq 1)
+}
+function Test-ConsumerExperiencesDisabled {
+    $v = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent' -Name 'DisableWindowsConsumerFeatures' -ErrorAction SilentlyContinue).DisableWindowsConsumerFeatures
+    return ($v -eq 1)
+}
+function Test-AutoDriverUpdateDisabled {
+    $v = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DriverSearching' -Name 'SearchOrderConfig' -ErrorAction SilentlyContinue).SearchOrderConfig
+    return ($v -eq 0)
+}
+function Test-CloudClipboardDisabled {
+    $v = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Clipboard' -Name 'CloudClipboardEnabled' -ErrorAction SilentlyContinue).CloudClipboardEnabled
+    return ($v -eq 0)
+}
+
 # --- Funcoes de TESTE (status) para os novos tweaks 14-19 ---
 function Test-WebSearchDisabled {
     $key = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search"
@@ -925,6 +1204,18 @@ function Is-TweakApplied {
         17 { return Test-TaskbarExtrasDisabled }
         18 { return Test-SuggestedContentDisabled }
         19 { return Test-LocationTrackingDisabled }
+        20 { return Test-FastStartupDisabled }
+        21 { return Test-OneDriveDisabled }
+        22 { return Test-XboxGameBarDisabled }
+        23 { return Test-AutoRebootDisabled }
+        24 { return Test-ThisPCDefault }
+        25 { return Test-MouseAccelerationDisabled }
+        26 { return Test-AccessibilityKeysDisabled }
+        27 { return Test-USBSelectiveSuspendDisabled }
+        28 { return Test-SecondsInTaskbar }
+        29 { return Test-ConsumerExperiencesDisabled }
+        30 { return Test-AutoDriverUpdateDisabled }
+        31 { return Test-CloudClipboardDisabled }
         default { return $false }
     }
 }
@@ -947,7 +1238,7 @@ function Get-TweaksStatus {
     Write-Host "========================================" -ForegroundColor Cyan
 
     $appliedCount = 0
-    $totalTweaks = 19
+    $totalTweaks = 31
 
     # 1. Verificar Plano de Energia
     Write-Host "`n[1/13] Plano de Energia 'Desempenho Maximo':" -ForegroundColor Yellow
@@ -1239,13 +1530,85 @@ function Get-TweaksStatus {
     }
 
     # 19. Verificar Rastreamento de Localizacao
-    Write-Host "`n[19/19] Rastreamento de Localizacao:" -ForegroundColor Yellow
+    Write-Host "`n[19/31] Rastreamento de Localizacao:" -ForegroundColor Yellow
     if (Test-LocationTrackingDisabled) {
         Write-Host "      [ATIVO] Rastreamento de localizacao desativado." -ForegroundColor Green
         $appliedCount++
     } else {
         Write-Host "      [INATIVO] Rastreamento de localizacao ativado." -ForegroundColor Red
     }
+
+    # 20. Fast Startup
+    Write-Host "`n[20/31] Fast Startup (Inicializacao Hibrida):" -ForegroundColor Yellow
+    if (Test-FastStartupDisabled) {
+        Write-Host "      [ATIVO] Fast Startup desativado." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] Fast Startup ativado." -ForegroundColor Red }
+
+    # 21. OneDrive
+    Write-Host "`n[21/31] OneDrive:" -ForegroundColor Yellow
+    if (Test-OneDriveDisabled) {
+        Write-Host "      [ATIVO] OneDrive bloqueado." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] OneDrive ativo." -ForegroundColor Red }
+
+    # 22. Xbox Game Bar
+    Write-Host "`n[22/31] Xbox Game Bar / Game Mode:" -ForegroundColor Yellow
+    if (Test-XboxGameBarDisabled) {
+        Write-Host "      [ATIVO] Xbox Game Bar desativado." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] Xbox Game Bar ativado." -ForegroundColor Red }
+
+    # 23. Auto Reboot
+    Write-Host "`n[23/31] Reinicio Automatico do Windows Update:" -ForegroundColor Yellow
+    if (Test-AutoRebootDisabled) {
+        Write-Host "      [ATIVO] Reinicio automatico desativado." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] Reinicio automatico ativado." -ForegroundColor Red }
+
+    # 24. This PC Default
+    Write-Host "`n[24/31] 'Este Computador' como padrao no Explorer:" -ForegroundColor Yellow
+    if (Test-ThisPCDefault) {
+        Write-Host "      [ATIVO] Explorer abre em 'Este Computador'." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] Explorer abre em Acesso Rapido." -ForegroundColor Red }
+
+    # 25. Mouse Acceleration
+    Write-Host "`n[25/31] Aceleracao do Mouse:" -ForegroundColor Yellow
+    if (Test-MouseAccelerationDisabled) {
+        Write-Host "      [ATIVO] Aceleracao do mouse desativada." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] Aceleracao do mouse ativada." -ForegroundColor Red }
+
+    # 26. Accessibility Keys
+    Write-Host "`n[26/31] Teclas de Acessibilidade (Sticky/Filter Keys):" -ForegroundColor Yellow
+    if (Test-AccessibilityKeysDisabled) {
+        Write-Host "      [ATIVO] Atalhos de acessibilidade desativados." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] Atalhos de acessibilidade ativados." -ForegroundColor Red }
+
+    # 27. USB Selective Suspend
+    Write-Host "`n[27/31] Suspensao Seletiva de USB:" -ForegroundColor Yellow
+    if (Test-USBSelectiveSuspendDisabled) {
+        Write-Host "      [ATIVO] Suspensao seletiva de USB desativada." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] Suspensao seletiva ativada." -ForegroundColor Red }
+
+    # 28. Seconds in Taskbar
+    Write-Host "`n[28/31] Segundos no Relogio da Barra:" -ForegroundColor Yellow
+    if (Test-SecondsInTaskbar) {
+        Write-Host "      [ATIVO] Segundos visiveis no relogio." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] Segundos ocultos no relogio." -ForegroundColor Red }
+
+    # 29. Consumer Experiences
+    Write-Host "`n[29/31] Experiencias do Consumidor (Sugestoes):" -ForegroundColor Yellow
+    if (Test-ConsumerExperiencesDisabled) {
+        Write-Host "      [ATIVO] Sugestoes de apps desativadas." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] Sugestoes de apps ativas." -ForegroundColor Red }
+
+    # 30. Auto Driver Update
+    Write-Host "`n[30/31] Atualizacao Automatica de Drivers:" -ForegroundColor Yellow
+    if (Test-AutoDriverUpdateDisabled) {
+        Write-Host "      [ATIVO] Drivers nao sao atualizados automaticamente." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] Drivers atualizados automaticamente." -ForegroundColor Red }
+
+    # 31. Cloud Clipboard
+    Write-Host "`n[31/31] Sincronizacao da Area de Transferencia (Cloud):" -ForegroundColor Yellow
+    if (Test-CloudClipboardDisabled) {
+        Write-Host "      [ATIVO] Sincronizacao de area de transferencia desativada." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] Sincronizacao ativada." -ForegroundColor Red }
 
     # Resumo
     Write-Host "`n========================================" -ForegroundColor Cyan
@@ -1257,7 +1620,7 @@ function Get-TweaksStatus {
     } elseif ($appliedCount -eq 0) {
         Write-Host "Nenhum tweak aplicado." -ForegroundColor Red
     } else {
-        Write-Host "$appliedCount tweak(s) aplicado(s). Use a Opção 20 para aplicar todos." -ForegroundColor Yellow
+        Write-Host "$appliedCount tweak(s) aplicado(s). Use a Opção 32 para aplicar todos." -ForegroundColor Yellow
     }
     
     Write-Log "Status dos tweaks verificado: $appliedCount/$totalTweaks aplicados" "INFO"
@@ -1272,8 +1635,8 @@ function Invoke-SystemTweaks {
     $choice = $choice -replace '\s+', ''
 
     # Validar input
-    if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max 22)) {
-        Write-Host "Opção inválida. Por favor, digite um numero entre 1 e 22." -ForegroundColor Red
+    if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max 34)) {
+        Write-Host "Opção inválida. Por favor, digite um numero entre 1 e 34." -ForegroundColor Red
         Start-Sleep -Seconds 2
         return
     }
@@ -1376,7 +1739,67 @@ function Invoke-SystemTweaks {
         }
         "20" {
             Write-Host "`n========================================" -ForegroundColor Cyan
-            Write-Host "  APLICANDO TODOS OS AJUSTES (1-19)" -ForegroundColor Cyan
+            Disable-FastStartup
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "21" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-OneDrive
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "22" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-XboxGameBar
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "23" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-AutoReboot
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "24" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Set-ThisPCDefault
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "25" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-MouseAcceleration
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "26" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-AccessibilityKeys
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "27" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-USBSelectiveSuspend
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "28" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Show-SecondsInTaskbar
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "29" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-ConsumerExperiences
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "30" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-AutoDriverUpdate
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "31" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-CloudClipboard
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "32" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Write-Host "  APLICANDO TODOS OS AJUSTES (1-31)" -ForegroundColor Cyan
             Write-Host "========================================" -ForegroundColor Cyan
             Set-HighPerformancePowerPlan
             Disable-BasicTelemetry
@@ -1397,16 +1820,28 @@ function Invoke-SystemTweaks {
             Disable-TaskbarExtras
             Disable-SuggestedContentAndTimeline
             Disable-LocationTracking
+            Disable-FastStartup
+            Disable-OneDrive
+            Disable-XboxGameBar
+            Disable-AutoReboot
+            Set-ThisPCDefault
+            Disable-MouseAcceleration
+            Disable-AccessibilityKeys
+            Disable-USBSelectiveSuspend
+            Show-SecondsInTaskbar
+            Disable-ConsumerExperiences
+            Disable-AutoDriverUpdate
+            Disable-CloudClipboard
             Write-Host "`n========================================" -ForegroundColor Green
             Write-Host "  TODOS OS AJUSTES APLICADOS!" -ForegroundColor Green
             Write-Host "========================================" -ForegroundColor Green
         }
-        "21" {
+        "33" {
             Write-Host "`n========================================" -ForegroundColor Cyan
             Get-TweaksStatus
             Write-Host "========================================" -ForegroundColor Cyan
         }
-        "22" { return }
+        "34" { return }
         default {
             Write-Host "Opção inválida. Por favor, tente novamente." -ForegroundColor Red
             Start-Sleep -Seconds 2
