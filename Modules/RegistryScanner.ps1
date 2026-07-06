@@ -223,7 +223,7 @@ function Get-RegistryJunkReport {
     }
 
     Write-Progress -Activity "Varrendo registro" -Completed
-    Write-Log "Varredura de registro concluida: $($findings.Count) itens orfaos encontrados." "INFO"
+    Write-Log "Varredura de registro concluída: $($findings.Count) itens órfãos encontrados." "INFO"
     return $findings
 }
 
@@ -231,11 +231,11 @@ function Show-RegistryJunkReport {
     param($Findings)
 
     if ($Findings.Count -eq 0) {
-        Write-Host "`n      [OK] Nenhuma chave orfa encontrada nas categorias seguras verificadas." -ForegroundColor Green
+        Write-Host "`n      [OK] Nenhuma chave órfã encontrada nas categorias seguras verificadas." -ForegroundColor Green
         return
     }
 
-    Write-Host "`n      $($Findings.Count) item(ns) orfao(s) encontrado(s):" -ForegroundColor Yellow
+    Write-Host "`n      $($Findings.Count) item(ns) órfão(s) encontrado(s):" -ForegroundColor Yellow
     $grouped = $Findings | Group-Object Category
     foreach ($group in $grouped) {
         Write-Host "`n      -- $($group.Name) ($($group.Count)) --" -ForegroundColor Cyan
@@ -285,7 +285,7 @@ function Backup-RegistryFindings {
 }
 
 # ---------------------------------------------------------------------------
-# Limpeza (com backup obrigatorio + barra de progresso)
+# Limpeza (com backup obrigatório + barra de progresso)
 # ---------------------------------------------------------------------------
 
 function Clear-RegistryJunk {
@@ -369,7 +369,7 @@ function Invoke-RegistryScan {
     Write-Host "  4. Voltar ao Menu Principal"
     Write-Host "`n========================================" -ForegroundColor Cyan
 
-    $choice = Read-Host "Digite o numero da sua escolha"
+    $choice = Read-Host "Digite o número da sua escolha"
     $choice = $choice -replace '\s+', ''
 
     $maxOpt = if ($DryRun) { 3 } else { 4 }
