@@ -221,9 +221,15 @@ function Show-TweaksMenu {
     Write-TweakMenuOption -Index 29 -Label "Desativar Experiencias do Consumidor (Sugestoes)" -Applied (Test-ConsumerExperiencesDisabled)
     Write-TweakMenuOption -Index 30 -Label "Desativar Atualizacao Automatica de Drivers" -Applied (Test-AutoDriverUpdateDisabled)
     Write-TweakMenuOption -Index 31 -Label "Desativar Sincronizacao da Area de Transferencia (Cloud)" -Applied (Test-CloudClipboardDisabled)
-    Write-TweakMenuOption -Index 32 -Label "Aplicar TODOS os ajustes acima" -Applied $false
-    Write-TweakMenuOption -Index 33 -Label "Verificar status dos tweaks aplicados" -Applied $false
-    Write-TweakMenuOption -Index 34 -Label "Voltar ao Menu Principal" -Applied $false
+    Write-TweakMenuOption -Index 32 -Label "Desativar Windows Recall (IA - DISM)" -Applied (Test-WindowsRecallDisabled)
+    Write-TweakMenuOption -Index 33 -Label "Desativar Pesquisa do Bing no Menu Iniciar" -Applied (Test-BingSearchDisabled)
+    Write-TweakMenuOption -Index 34 -Label "Desativar DiagTrack (Servico de Telemetria)" -Applied (Test-DiagTrackDisabled)
+    Write-TweakMenuOption -Index 35 -Label "Desativar Geolocalizacao (Servico lfsvc)" -Applied (Test-GeolocationServiceDisabled)
+    Write-TweakMenuOption -Index 36 -Label "Desativar Biometria / Windows Hello (WbioSrvc)" -Applied (Test-BiometricsServiceDisabled)
+    Write-TweakMenuOption -Index 37 -Label "Desativar Roteador AllJoyn IoT (AJRouter)" -Applied (Test-AllJoynRouterDisabled)
+    Write-TweakMenuOption -Index 38 -Label "Aplicar TODOS os ajustes acima" -Applied $false
+    Write-TweakMenuOption -Index 39 -Label "Verificar status dos tweaks aplicados" -Applied $false
+    Write-TweakMenuOption -Index 40 -Label "Voltar ao Menu Principal" -Applied $false
 
     Write-Host "`n========================================" -ForegroundColor Cyan
 }
@@ -1013,6 +1019,147 @@ function Disable-CloudClipboard {
     }
 }
 
+# ==========================================================
+# NOVOS TWEAKS 32-37 (Seguranca, Privacidade e Servicos)
+# ==========================================================
+
+# 32. Desativar Windows Recall (IA - DISM)
+function Disable-WindowsRecall {
+    Write-Host "`n[32] Desativando Windows Recall via DISM..." -ForegroundColor Yellow
+    try {
+        $recallFeature = "Recall"
+        $result = dism /online /Get-FeatureInfo /FeatureName:$recallFeature 2>&1
+        $exists = ($LASTEXITCODE -eq 0)
+        if (-not $exists) {
+            Write-Host "      [OK] Recurso Recall nao encontrado no sistema." -ForegroundColor Green
+            Write-Log "Windows Recall: recurso nao encontrado." "SUCCESS"
+            return
+        }
+        $result = dism /online /Disable-Feature /FeatureName:$recallFeature /Remove /Quiet 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "      [OK] Windows Recall desativado com sucesso." -ForegroundColor Green
+            Write-Log "Windows Recall desativado via DISM." "SUCCESS"
+        } else {
+            Write-Host "      [AVISO] DISM retornou codigo $LASTEXITCODE. Verifique permissao de admin." -ForegroundColor Yellow
+            Write-Log "DISM para Recall retornou codigo $LASTEXITCODE" "WARNING"
+        }
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao desativar Windows Recall: $_" "ERROR"
+    }
+}
+
+# 33. Desativar Pesquisa do Bing no Menu Iniciar
+function Disable-BingSearch {
+    Write-Host "`n[33] Bloqueando pesquisa do Bing no Menu Iniciar..." -ForegroundColor Yellow
+    try {
+        $key = 'HKCU:\Software\Policies\Microsoft\Windows\Explorer'
+        if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
+        Set-ItemProperty -Path $key -Name 'DisableSearchBoxSuggestions' -Value 1 -Type DWord -Force
+        Write-Host "      [OK] Pesquisa do Bing bloqueada (SearchBoxSuggestions desativado)." -ForegroundColor Green
+        Write-Log "Pesquisa do Bing no Menu Iniciar bloqueada." "SUCCESS"
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao bloquear pesquisa do Bing: $_" "ERROR"
+    }
+}
+
+# 34. Desativar Servico DiagTrack (Telemetria)
+function Disable-DiagTrack {
+    Write-Host "`n[34] Desativando servico DiagTrack (Experiencias de Usuario Conectado e Telemetria)..." -ForegroundColor Yellow
+    try {
+        $service = Get-Service -Name 'DiagTrack' -ErrorAction SilentlyContinue
+        if (-not $service) {
+            Write-Host "      [OK] Servico DiagTrack nao encontrado no sistema." -ForegroundColor Green
+            Write-Log "DiagTrack: servico nao encontrado." "SUCCESS"
+            return
+        }
+        Stop-Service -Name 'DiagTrack' -Force -ErrorAction SilentlyContinue
+        sc.exe config DiagTrack start= disabled 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "      [OK] DiagTrack parado e desativado permanentemente." -ForegroundColor Green
+            Write-Log "DiagTrack desativado." "SUCCESS"
+        } else {
+            Write-Host "      [AVISO] Nao foi possivel desativar o servico (SC retornou $LASTEXITCODE)." -ForegroundColor Yellow
+            Write-Log "Falha ao desativar DiagTrack: codigo $LASTEXITCODE" "WARNING"
+        }
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao desativar DiagTrack: $_" "ERROR"
+    }
+}
+
+# 35. Desativar Servico de Geolocalizacao (lfsvc)
+function Disable-GeolocationService {
+    Write-Host "`n[35] Desativando servico de Geolocalizacao (lfsvc)..." -ForegroundColor Yellow
+    Write-Host "      Descricao: Servico de sensores de localizacao do Windows." -ForegroundColor DarkGray
+    try {
+        $service = Get-Service -Name 'lfsvc' -ErrorAction SilentlyContinue
+        if (-not $service) {
+            Write-Host "      [OK] Servico lfsvc nao encontrado." -ForegroundColor Green; return
+        }
+        Stop-Service -Name 'lfsvc' -Force -ErrorAction SilentlyContinue
+        sc.exe config lfsvc start= disabled 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "      [OK] Servico de geolocalizacao desativado." -ForegroundColor Green
+            Write-Log "Geolocalizacao (lfsvc) desativada." "SUCCESS"
+        } else {
+            Write-Host "      [AVISO] SC retornou codigo $LASTEXITCODE." -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao desativar lfsvc: $_" "ERROR"
+    }
+}
+
+# 36. Desativar Servico de Biometria / Windows Hello (WbioSrvc)
+function Disable-BiometricsService {
+    Write-Host "`n[36] Desativando servico de Biometria - Windows Hello (WbioSrvc)..." -ForegroundColor Yellow
+    Write-Host "      Descricao: Reconhecimento facial, digital e outras biometrias." -ForegroundColor DarkGray
+    Write-Host "      Recomendado apenas para desktops sem sensores biometricos." -ForegroundColor DarkGray
+    try {
+        $service = Get-Service -Name 'WbioSrvc' -ErrorAction SilentlyContinue
+        if (-not $service) {
+            Write-Host "      [OK] Servico WbioSrvc nao encontrado." -ForegroundColor Green; return
+        }
+        Stop-Service -Name 'WbioSrvc' -Force -ErrorAction SilentlyContinue
+        sc.exe config WbioSrvc start= disabled 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "      [OK] Biometria/Windows Hello desativado." -ForegroundColor Green
+            Write-Log "Biometria (WbioSrvc) desativada." "SUCCESS"
+        } else {
+            Write-Host "      [AVISO] SC retornou codigo $LASTEXITCODE." -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao desativar WbioSrvc: $_" "ERROR"
+    }
+}
+
+# 37. Desativar Roteador AllJoyn (AJRouter)
+function Disable-AllJoynRouter {
+    Write-Host "`n[37] Desativando Roteador AllJoyn (AJRouter)..." -ForegroundColor Yellow
+    Write-Host "      Descricao: Servico legado de comunicacao IoT (Internet das Coisas)." -ForegroundColor DarkGray
+    Write-Host "      Obs: Nao utilizado em ambientes desktop modernos." -ForegroundColor DarkGray
+    try {
+        $service = Get-Service -Name 'AJRouter' -ErrorAction SilentlyContinue
+        if (-not $service) {
+            Write-Host "      [OK] Servico AJRouter nao encontrado." -ForegroundColor Green; return
+        }
+        Stop-Service -Name 'AJRouter' -Force -ErrorAction SilentlyContinue
+        sc.exe config AJRouter start= disabled 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "      [OK] Roteador AllJoyn desativado." -ForegroundColor Green
+            Write-Log "AllJoyn (AJRouter) desativado." "SUCCESS"
+        } else {
+            Write-Host "      [AVISO] SC retornou codigo $LASTEXITCODE." -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "      [ERRO] Falha: $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+        Write-Log "Erro ao desativar AJRouter: $_" "ERROR"
+    }
+}
+
 # --- Funcoes de TESTE (status) para os novos tweaks 20-31 ---
 function Test-FastStartupDisabled {
     $v = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power' -Name 'HiberbootEnabled' -ErrorAction SilentlyContinue).HiberbootEnabled
@@ -1061,6 +1208,37 @@ function Test-AutoDriverUpdateDisabled {
 function Test-CloudClipboardDisabled {
     $v = (Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Clipboard' -Name 'CloudClipboardEnabled' -ErrorAction SilentlyContinue).CloudClipboardEnabled
     return ($v -eq 0)
+}
+
+# --- Funcoes de TESTE (status) para os novos tweaks 32-37 ---
+function Test-WindowsRecallDisabled {
+    # Verifica se o recurso Recall nao existe (removido) ou esta desativado
+    $result = dism /online /Get-FeatureInfo /FeatureName:Recall 2>&1
+    return ($LASTEXITCODE -ne 0)
+}
+function Test-BingSearchDisabled {
+    $v = (Get-ItemProperty -Path 'HKCU:\Software\Policies\Microsoft\Windows\Explorer' -Name 'DisableSearchBoxSuggestions' -ErrorAction SilentlyContinue).DisableSearchBoxSuggestions
+    return ($v -eq 1)
+}
+function Test-DiagTrackDisabled {
+    $s = Get-Service -Name 'DiagTrack' -ErrorAction SilentlyContinue
+    if (-not $s) { return $true }
+    return ($s.StartType -eq 'Disabled')
+}
+function Test-GeolocationServiceDisabled {
+    $s = Get-Service -Name 'lfsvc' -ErrorAction SilentlyContinue
+    if (-not $s) { return $true }
+    return ($s.StartType -eq 'Disabled')
+}
+function Test-BiometricsServiceDisabled {
+    $s = Get-Service -Name 'WbioSrvc' -ErrorAction SilentlyContinue
+    if (-not $s) { return $true }
+    return ($s.StartType -eq 'Disabled')
+}
+function Test-AllJoynRouterDisabled {
+    $s = Get-Service -Name 'AJRouter' -ErrorAction SilentlyContinue
+    if (-not $s) { return $true }
+    return ($s.StartType -eq 'Disabled')
 }
 
 # --- Funcoes de TESTE (status) para os novos tweaks 14-19 ---
@@ -1216,6 +1394,12 @@ function Is-TweakApplied {
         29 { return Test-ConsumerExperiencesDisabled }
         30 { return Test-AutoDriverUpdateDisabled }
         31 { return Test-CloudClipboardDisabled }
+        32 { return Test-WindowsRecallDisabled }
+        33 { return Test-BingSearchDisabled }
+        34 { return Test-DiagTrackDisabled }
+        35 { return Test-GeolocationServiceDisabled }
+        36 { return Test-BiometricsServiceDisabled }
+        37 { return Test-AllJoynRouterDisabled }
         default { return $false }
     }
 }
@@ -1238,7 +1422,7 @@ function Get-TweaksStatus {
     Write-Host "========================================" -ForegroundColor Cyan
 
     $appliedCount = 0
-    $totalTweaks = 31
+    $totalTweaks = 37
 
     # 1. Verificar Plano de Energia
     Write-Host "`n[1/13] Plano de Energia 'Desempenho Maximo':" -ForegroundColor Yellow
@@ -1485,7 +1669,7 @@ function Get-TweaksStatus {
     }
 
     # 14. Verificar Pesquisa Web no Menu Iniciar
-    Write-Host "`n[14/19] Pesquisa Web no Menu Iniciar:" -ForegroundColor Yellow
+    Write-Host "`n[14/37] Pesquisa Web no Menu Iniciar:" -ForegroundColor Yellow
     if (Test-WebSearchDisabled) {
         Write-Host "      [ATIVO] Pesquisa web no Menu Iniciar desativada." -ForegroundColor Green
         $appliedCount++
@@ -1494,7 +1678,7 @@ function Get-TweaksStatus {
     }
 
     # 15. Verificar Efeitos Visuais
-    Write-Host "`n[15/19] Efeitos Visuais (Melhor Desempenho):" -ForegroundColor Yellow
+    Write-Host "`n[15/37] Efeitos Visuais (Melhor Desempenho):" -ForegroundColor Yellow
     if (Test-BestPerformanceVisualsConfigured) {
         Write-Host "      [ATIVO] Sistema ajustado para melhor desempenho." -ForegroundColor Green
         $appliedCount++
@@ -1503,7 +1687,7 @@ function Get-TweaksStatus {
     }
 
     # 16. Verificar Bloatware removido
-    Write-Host "`n[16/19] Apps Padrao (Bloatware):" -ForegroundColor Yellow
+    Write-Host "`n[16/37] Apps Padrao (Bloatware):" -ForegroundColor Yellow
     if (Test-BloatwareRemoved) {
         Write-Host "      [ATIVO] Sem bloatware conhecido (sistema limpo)." -ForegroundColor Green
         $appliedCount++
@@ -1512,7 +1696,7 @@ function Get-TweaksStatus {
     }
 
     # 17. Verificar Taskbar Extras
-    Write-Host "`n[17/19] Widgets/Chat/People na Taskbar:" -ForegroundColor Yellow
+    Write-Host "`n[17/37] Widgets/Chat/People na Taskbar:" -ForegroundColor Yellow
     if (Test-TaskbarExtrasDisabled) {
         Write-Host "      [ATIVO] Widgets/Chat/People desativados." -ForegroundColor Green
         $appliedCount++
@@ -1521,7 +1705,7 @@ function Get-TweaksStatus {
     }
 
     # 18. Verificar Conteudo Sugerido/Timeline
-    Write-Host "`n[18/19] Conteudo Sugerido e Timeline:" -ForegroundColor Yellow
+    Write-Host "`n[18/37] Conteudo Sugerido e Timeline:" -ForegroundColor Yellow
     if (Test-SuggestedContentDisabled) {
         Write-Host "      [ATIVO] Conteudo sugerido/Timeline desativados." -ForegroundColor Green
         $appliedCount++
@@ -1530,7 +1714,7 @@ function Get-TweaksStatus {
     }
 
     # 19. Verificar Rastreamento de Localizacao
-    Write-Host "`n[19/31] Rastreamento de Localizacao:" -ForegroundColor Yellow
+    Write-Host "`n[19/37] Rastreamento de Localizacao:" -ForegroundColor Yellow
     if (Test-LocationTrackingDisabled) {
         Write-Host "      [ATIVO] Rastreamento de localizacao desativado." -ForegroundColor Green
         $appliedCount++
@@ -1539,76 +1723,112 @@ function Get-TweaksStatus {
     }
 
     # 20. Fast Startup
-    Write-Host "`n[20/31] Fast Startup (Inicializacao Hibrida):" -ForegroundColor Yellow
+    Write-Host "`n[20/37] Fast Startup (Inicializacao Hibrida):" -ForegroundColor Yellow
     if (Test-FastStartupDisabled) {
         Write-Host "      [ATIVO] Fast Startup desativado." -ForegroundColor Green; $appliedCount++
     } else { Write-Host "      [INATIVO] Fast Startup ativado." -ForegroundColor Red }
 
     # 21. OneDrive
-    Write-Host "`n[21/31] OneDrive:" -ForegroundColor Yellow
+    Write-Host "`n[21/37] OneDrive:" -ForegroundColor Yellow
     if (Test-OneDriveDisabled) {
         Write-Host "      [ATIVO] OneDrive bloqueado." -ForegroundColor Green; $appliedCount++
     } else { Write-Host "      [INATIVO] OneDrive ativo." -ForegroundColor Red }
 
     # 22. Xbox Game Bar
-    Write-Host "`n[22/31] Xbox Game Bar / Game Mode:" -ForegroundColor Yellow
+    Write-Host "`n[22/37] Xbox Game Bar / Game Mode:" -ForegroundColor Yellow
     if (Test-XboxGameBarDisabled) {
         Write-Host "      [ATIVO] Xbox Game Bar desativado." -ForegroundColor Green; $appliedCount++
     } else { Write-Host "      [INATIVO] Xbox Game Bar ativado." -ForegroundColor Red }
 
     # 23. Auto Reboot
-    Write-Host "`n[23/31] Reinicio Automatico do Windows Update:" -ForegroundColor Yellow
+    Write-Host "`n[23/37] Reinicio Automatico do Windows Update:" -ForegroundColor Yellow
     if (Test-AutoRebootDisabled) {
         Write-Host "      [ATIVO] Reinicio automatico desativado." -ForegroundColor Green; $appliedCount++
     } else { Write-Host "      [INATIVO] Reinicio automatico ativado." -ForegroundColor Red }
 
     # 24. This PC Default
-    Write-Host "`n[24/31] 'Este Computador' como padrao no Explorer:" -ForegroundColor Yellow
+    Write-Host "`n[24/37] 'Este Computador' como padrao no Explorer:" -ForegroundColor Yellow
     if (Test-ThisPCDefault) {
         Write-Host "      [ATIVO] Explorer abre em 'Este Computador'." -ForegroundColor Green; $appliedCount++
     } else { Write-Host "      [INATIVO] Explorer abre em Acesso Rapido." -ForegroundColor Red }
 
     # 25. Mouse Acceleration
-    Write-Host "`n[25/31] Aceleracao do Mouse:" -ForegroundColor Yellow
+    Write-Host "`n[25/37] Aceleracao do Mouse:" -ForegroundColor Yellow
     if (Test-MouseAccelerationDisabled) {
         Write-Host "      [ATIVO] Aceleracao do mouse desativada." -ForegroundColor Green; $appliedCount++
     } else { Write-Host "      [INATIVO] Aceleracao do mouse ativada." -ForegroundColor Red }
 
     # 26. Accessibility Keys
-    Write-Host "`n[26/31] Teclas de Acessibilidade (Sticky/Filter Keys):" -ForegroundColor Yellow
+    Write-Host "`n[26/37] Teclas de Acessibilidade (Sticky/Filter Keys):" -ForegroundColor Yellow
     if (Test-AccessibilityKeysDisabled) {
         Write-Host "      [ATIVO] Atalhos de acessibilidade desativados." -ForegroundColor Green; $appliedCount++
     } else { Write-Host "      [INATIVO] Atalhos de acessibilidade ativados." -ForegroundColor Red }
 
     # 27. USB Selective Suspend
-    Write-Host "`n[27/31] Suspensao Seletiva de USB:" -ForegroundColor Yellow
+    Write-Host "`n[27/37] Suspensao Seletiva de USB:" -ForegroundColor Yellow
     if (Test-USBSelectiveSuspendDisabled) {
         Write-Host "      [ATIVO] Suspensao seletiva de USB desativada." -ForegroundColor Green; $appliedCount++
     } else { Write-Host "      [INATIVO] Suspensao seletiva ativada." -ForegroundColor Red }
 
     # 28. Seconds in Taskbar
-    Write-Host "`n[28/31] Segundos no Relogio da Barra:" -ForegroundColor Yellow
+    Write-Host "`n[28/37] Segundos no Relogio da Barra:" -ForegroundColor Yellow
     if (Test-SecondsInTaskbar) {
         Write-Host "      [ATIVO] Segundos visiveis no relogio." -ForegroundColor Green; $appliedCount++
     } else { Write-Host "      [INATIVO] Segundos ocultos no relogio." -ForegroundColor Red }
 
     # 29. Consumer Experiences
-    Write-Host "`n[29/31] Experiencias do Consumidor (Sugestoes):" -ForegroundColor Yellow
+    Write-Host "`n[29/37] Experiencias do Consumidor (Sugestoes):" -ForegroundColor Yellow
     if (Test-ConsumerExperiencesDisabled) {
         Write-Host "      [ATIVO] Sugestoes de apps desativadas." -ForegroundColor Green; $appliedCount++
     } else { Write-Host "      [INATIVO] Sugestoes de apps ativas." -ForegroundColor Red }
 
     # 30. Auto Driver Update
-    Write-Host "`n[30/31] Atualizacao Automatica de Drivers:" -ForegroundColor Yellow
+    Write-Host "`n[30/37] Atualizacao Automatica de Drivers:" -ForegroundColor Yellow
     if (Test-AutoDriverUpdateDisabled) {
         Write-Host "      [ATIVO] Drivers nao sao atualizados automaticamente." -ForegroundColor Green; $appliedCount++
     } else { Write-Host "      [INATIVO] Drivers atualizados automaticamente." -ForegroundColor Red }
 
     # 31. Cloud Clipboard
-    Write-Host "`n[31/31] Sincronizacao da Area de Transferencia (Cloud):" -ForegroundColor Yellow
+    Write-Host "`n[31/37] Sincronizacao da Area de Transferencia (Cloud):" -ForegroundColor Yellow
     if (Test-CloudClipboardDisabled) {
         Write-Host "      [ATIVO] Sincronizacao de area de transferencia desativada." -ForegroundColor Green; $appliedCount++
     } else { Write-Host "      [INATIVO] Sincronizacao ativada." -ForegroundColor Red }
+
+    # 32. Windows Recall
+    Write-Host "`n[32/37] Windows Recall (IA):" -ForegroundColor Yellow
+    if (Test-WindowsRecallDisabled) {
+        Write-Host "      [ATIVO] Windows Recall desativado." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] Windows Recall ativo." -ForegroundColor Red }
+
+    # 33. Bing Search
+    Write-Host "`n[33/37] Pesquisa do Bing no Menu Iniciar:" -ForegroundColor Yellow
+    if (Test-BingSearchDisabled) {
+        Write-Host "      [ATIVO] Pesquisa do Bing bloqueada." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] Pesquisa do Bing ativa." -ForegroundColor Red }
+
+    # 34. DiagTrack
+    Write-Host "`n[34/37] DiagTrack (Servico de Telemetria):" -ForegroundColor Yellow
+    if (Test-DiagTrackDisabled) {
+        Write-Host "      [ATIVO] DiagTrack desativado." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] DiagTrack ativo." -ForegroundColor Red }
+
+    # 35. Geolocalizacao
+    Write-Host "`n[35/37] Geolocalizacao (lfsvc):" -ForegroundColor Yellow
+    if (Test-GeolocationServiceDisabled) {
+        Write-Host "      [ATIVO] Servico de geolocalizacao desativado." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] Servico de geolocalizacao ativo." -ForegroundColor Red }
+
+    # 36. Biometria
+    Write-Host "`n[36/37] Biometria / Windows Hello (WbioSrvc):" -ForegroundColor Yellow
+    if (Test-BiometricsServiceDisabled) {
+        Write-Host "      [ATIVO] Biometria desativada." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] Biometria ativa." -ForegroundColor Red }
+
+    # 37. AllJoyn Router
+    Write-Host "`n[37/37] Roteador AllJoyn IoT (AJRouter):" -ForegroundColor Yellow
+    if (Test-AllJoynRouterDisabled) {
+        Write-Host "      [ATIVO] Roteador AllJoyn desativado." -ForegroundColor Green; $appliedCount++
+    } else { Write-Host "      [INATIVO] Roteador AllJoyn ativo." -ForegroundColor Red }
 
     # Resumo
     Write-Host "`n========================================" -ForegroundColor Cyan
@@ -1620,7 +1840,7 @@ function Get-TweaksStatus {
     } elseif ($appliedCount -eq 0) {
         Write-Host "Nenhum tweak aplicado." -ForegroundColor Red
     } else {
-        Write-Host "$appliedCount tweak(s) aplicado(s). Use a Opção 32 para aplicar todos." -ForegroundColor Yellow
+        Write-Host "$appliedCount tweak(s) aplicado(s). Use a Opção 38 para aplicar todos." -ForegroundColor Yellow
     }
     
     Write-Log "Status dos tweaks verificado: $appliedCount/$totalTweaks aplicados" "INFO"
@@ -1635,8 +1855,8 @@ function Invoke-SystemTweaks {
     $choice = $choice -replace '\s+', ''
 
     # Validar input
-    if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max 34)) {
-        Write-Host "Opção inválida. Por favor, digite um numero entre 1 e 34." -ForegroundColor Red
+    if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max 40)) {
+        Write-Host "Opção inválida. Por favor, digite um numero entre 1 e 40." -ForegroundColor Red
         Start-Sleep -Seconds 2
         return
     }
@@ -1799,7 +2019,37 @@ function Invoke-SystemTweaks {
         }
         "32" {
             Write-Host "`n========================================" -ForegroundColor Cyan
-            Write-Host "  APLICANDO TODOS OS AJUSTES (1-31)" -ForegroundColor Cyan
+            Disable-WindowsRecall
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "33" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-BingSearch
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "34" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-DiagTrack
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "35" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-GeolocationService
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "36" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-BiometricsService
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "37" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Disable-AllJoynRouter
+            Write-Host "========================================" -ForegroundColor Cyan
+        }
+        "38" {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Write-Host "  APLICANDO TODOS OS AJUSTES (1-37)" -ForegroundColor Cyan
             Write-Host "========================================" -ForegroundColor Cyan
             Set-HighPerformancePowerPlan
             Disable-BasicTelemetry
@@ -1832,16 +2082,22 @@ function Invoke-SystemTweaks {
             Disable-ConsumerExperiences
             Disable-AutoDriverUpdate
             Disable-CloudClipboard
+            Disable-WindowsRecall
+            Disable-BingSearch
+            Disable-DiagTrack
+            Disable-GeolocationService
+            Disable-BiometricsService
+            Disable-AllJoynRouter
             Write-Host "`n========================================" -ForegroundColor Green
             Write-Host "  TODOS OS AJUSTES APLICADOS!" -ForegroundColor Green
             Write-Host "========================================" -ForegroundColor Green
         }
-        "33" {
+        "39" {
             Write-Host "`n========================================" -ForegroundColor Cyan
             Get-TweaksStatus
             Write-Host "========================================" -ForegroundColor Cyan
         }
-        "34" { return }
+        "40" { return }
         default {
             Write-Host "Opção inválida. Por favor, tente novamente." -ForegroundColor Red
             Start-Sleep -Seconds 2
