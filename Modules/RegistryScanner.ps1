@@ -1,30 +1,48 @@
 <#
 .SYNOPSIS
-    Modulo de Varredura e Limpeza do Registro do Windows.
+    Módulo de Varredura e Limpeza do Registro do Windows.
 .DESCRIPTION
     Escaneia categorias objetivamente seguras do registro (entradas de
-    desinstalacao orfas, SharedDLLs quebradas, App Paths inexistentes e
-    MUICache obsoleto) e permite limpeza com backup automatico da chave
-    afetada antes de qualquer exclusao. NAO mexe em CLSID/COM, ProgIDs de
-    extensao de arquivo ou hives de sistema (SAM/SECURITY/SYSTEM bruto) -
-    essas categorias sao as que mais quebram instalacoes em limpadores
-    genericos e foram deliberadamente deixadas de fora.
+    desinstalação órfãs, SharedDLLs quebradas, App Paths inexistentes,
+    MUICache obsoleto, Run/RunOnce órfãos, Fontes não instaladas,
+    Extensões de shell não registradas) e permite limpeza com backup
+    automático da chave afetada antes de qualquer exclusão.
+    NÃO mexe em CLSID/COM, ProgIDs de extensão de arquivo ou hives de
+    sistema (SAM/SECURITY/SYSTEM bruto) - essas categorias são as que
+    mais quebram instalações em limpadores genéricos e foram
+    deliberadamente deixadas de fora.
 #>
 
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\SecurityHelper.ps1"
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\Logger.ps1"
+. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\ConfigManager.ps1"
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
 # ---------------------------------------------------------------------------
-# Definicao das categorias seguras de varredura
+# Carregar lista de exclusão a partir de Settings.json (chave RegistryExclude)
+# ---------------------------------------------------------------------------
+$cfg = Get-WMSConfig
+$global:RegistryExclude = @()
+if ($cfg.RegistryExclude) { $global:RegistryExclude = $cfg.RegistryExclude }
+
+function Test-ExcludedPath {
+    param([string]$Path)
+    foreach ($ex in $global:RegistryExclude) {
+        if ($Path -like $ex) { return $true }
+    }
+    return $false
+}
+
+# ---------------------------------------------------------------------------
+# Definição das categorias seguras de varredura
 # ---------------------------------------------------------------------------
 
 function Get-RegistryScanCategories {
     return @(
         @{
-            Name = "Entradas de Desinstalacao Orfas"
+            Name = "Entradas de Desinstalação Órfãs"
             Hives = @(
                 "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
                 "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
@@ -73,6 +91,53 @@ function Get-RegistryScanCategories {
                 $clean = $valuePath -replace '\.FriendlyAppName$', '' -replace '\.ApplicationCompany$', ''
                 return (-not (Test-Path -Path $clean -ErrorAction SilentlyContinue))
             }
+        },
+        @{
+            Name = "Run / RunOnce Órfãos"
+            Hives = @(
+                "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+                "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce",
+                "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+                "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce"
+            )
+            IsValueScan = $true
+            Check = {
+                param($valuePath)
+                if ([string]::IsNullOrWhiteSpace($valuePath)) { return $false }
+                # valuePath contém o comando; extrair primeiro executável entre aspas ou primeiro token
+                $cmd = $valuePath.Trim()
+                if ($cmd.StartsWith('"')) { $cmd = $cmd.TrimStart('"'); $cmd = $cmd.Substring(0,$cmd.IndexOf('"')) }
+                else { $cmd = $cmd.Split(' ')[0] }
+                return (-not (Test-Path -Path $cmd -ErrorAction SilentlyContinue))
+            }
+        },
+        @{
+            Name = "Fontes Não Instaladas"
+            Hives = @("HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts")
+            IsValueScan = $true
+            Check = {
+                param($fontFile)
+                # valor contém nome do arquivo da fonte; verificar se existe na pasta Fonts
+                $fontsDir = [Environment]::GetFolderPath('Fonts')
+                $full = Join-Path $fontsDir $fontFile
+                return (-not (Test-Path -Path $full -ErrorAction SilentlyContinue))
+            }
+        },
+        @{
+            Name = "Extensões de Shell Órfãs (ShellEx)"
+            Hives = @(
+                "HKLM:\SOFTWARE\Classes\*\ShellEx",
+                "HKLM:\SOFTWARE\Classes\Directory\ShellEx",
+                "HKLM:\SOFTWARE\Classes\Drive\ShellEx"
+            )
+            Check = {
+                param($key)
+                # cada subchave deve ter um CLSID válido em HKCR\CLSID\{guid}
+                $clsid = (Get-ItemProperty -Path $key.PSPath -ErrorAction SilentlyContinue).'(default)'
+                if (-not $clsid) { return $false }
+                $clsidPath = "HKCR:\CLSID\$clsid"
+                return (-not (Test-Path -Path $clsidPath -ErrorAction SilentlyContinue))
+            }
         }
     )
 }
@@ -82,12 +147,15 @@ function Get-RegistryScanCategories {
 # ---------------------------------------------------------------------------
 
 function Get-RegistryJunkReport {
+    param(
+        [switch]$UseDotNet = $true   # usar Microsoft.Win32.RegistryKey para performance
+    )
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "  VARREDURA DO REGISTRO" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
 
     $categories = Get-RegistryScanCategories
-    $findings = New-Object System.Collections.Generic.List[Object]
+    $findings = [System.Collections.Generic.List[Object]]::new()
     $totalCategories = $categories.Count
     $catIndex = 0
 
@@ -98,10 +166,17 @@ function Get-RegistryJunkReport {
 
         foreach ($hivePath in $cat.Hives) {
             if (-not (Test-Path $hivePath -ErrorAction SilentlyContinue)) { continue }
+            if (Test-ExcludedPath -Path $hivePath) { continue }
 
             if ($cat.IsValueScan) {
                 try {
-                    $props = Get-ItemProperty -Path $hivePath -ErrorAction SilentlyContinue
+                    if ($UseDotNet) {
+                        $regKey = [Microsoft.Win32.Registry]::GetValue($hivePath.Replace('HKLM:','HKEY_LOCAL_MACHINE\').Replace('HKCU:','HKEY_CURRENT_USER\'), $null, $null)
+                        # fallback to Get-ItemProperty if not accessible
+                        $props = Get-ItemProperty -Path $hivePath -ErrorAction SilentlyContinue
+                    } else {
+                        $props = Get-ItemProperty -Path $hivePath -ErrorAction SilentlyContinue
+                    }
                     if (-not $props) { continue }
                     $valueNames = $props.PSObject.Properties | Where-Object { $_.Name -notlike "PS*" }
                     $total = ($valueNames | Measure-Object).Count
@@ -114,6 +189,7 @@ function Get-RegistryJunkReport {
                         }
                         $checkTarget = if ($cat.ValueNameIsPath) { $v.Name } else { $v.Value }
                         if ([string]::IsNullOrWhiteSpace($checkTarget)) { continue }
+                        if (Test-ExcludedPath -Path "$hivePath\$($v.Name)") { continue }
                         try {
                             if (& $cat.Check $checkTarget) {
                                 $findings.Add([PSCustomObject]@{
@@ -137,6 +213,8 @@ function Get-RegistryJunkReport {
                             Write-Progress -Activity $baseActivity -Status "$($cat.Name): $($key.PSChildName)" `
                                 -PercentComplete ([int](($catIndex - 1) / $totalCategories * 100 + ($i / $total) * (100 / $totalCategories)))
                         }
+                        $fullPath = $key.PSPath
+                        if (Test-ExcludedPath -Path $fullPath) { continue }
                         try {
                             if (& $cat.Check $key) {
                                 $findings.Add([PSCustomObject]@{
@@ -220,38 +298,61 @@ function Backup-RegistryFindings {
 # ---------------------------------------------------------------------------
 
 function Clear-RegistryJunk {
-    param($Findings)
+    param(
+        $Findings,
+        [switch]$DryRun
+    )
 
     if ($Findings.Count -eq 0) { return }
 
-    Write-Host "`n[>] Fazendo backup das chaves afetadas antes de excluir..." -ForegroundColor Yellow
-    $backupOk = Backup-RegistryFindings -Findings $Findings
-    if (-not $backupOk) {
-        Write-Host "      [ERRO] Backup falhou. Abortando limpeza por seguranca." -ForegroundColor Red
-        Write-Log "Limpeza de registro abortada: backup falhou." "ERROR"
-        return
+    if ($DryRun) {
+        Write-Host "`n[DRY-RUN] Simulação de limpeza - nenhuma alteração será feita." -ForegroundColor Yellow
+    } else {
+        Write-Host "`n[>] Fazendo backup das chaves afetadas antes de excluir..." -ForegroundColor Yellow
+        $backupOk = Backup-RegistryFindings -Findings $Findings
+        if (-not $backupOk) {
+            Write-Host "      [ERRO] Backup falhou. Abortando limpeza por segurança." -ForegroundColor Red
+            Write-Log "Limpeza de registro abortada: backup falhou." "ERROR"
+            return
+        }
     }
 
     $total = $Findings.Count
     $i = 0
     $removed = 0
     $failed = 0
+    $undoLog = @()
 
     foreach ($item in $Findings) {
         $i++
         Write-Progress -Activity "Limpando registro" -Status "$($item.Category): $($item.Detail)" -PercentComplete ([int]($i / $total * 100))
         try {
             if ($item.ValueName) {
-                Remove-ItemProperty -Path $item.KeyPath -Name $item.ValueName -Force -ErrorAction Stop
+                if (-not $DryRun) {
+                    Remove-ItemProperty -Path $item.KeyPath -Name $item.ValueName -Force -ErrorAction Stop
+                }
+                $undoLog += "Remove-ItemProperty -Path '$($item.KeyPath)' -Name '$($item.ValueName)'"
             } else {
-                Remove-Item -Path $item.KeyPath -Recurse -Force -ErrorAction Stop
+                if (-not $DryRun) {
+                    Remove-Item -Path $item.KeyPath -Recurse -Force -ErrorAction Stop
+                }
+                $undoLog += "Remove-Item -Path '$($item.KeyPath)' -Recurse -Force"
             }
             $removed++
         } catch {
             $failed++
+            Write-Log "Falha ao remover $($item.KeyPath) ($($item.ValueName)): $_" "WARNING"
         }
     }
     Write-Progress -Activity "Limpando registro" -Completed
+
+    if (-not $DryRun) {
+        # salvar undo log
+        $backupPath = Get-SafeBackupPath
+        $undoFile = Join-Path $backupPath "Undo_RegistryCleanup_$(Get-Date -Format 'yyyyMMdd_HHmmss').ps1"
+        $undoLog | Set-Content -Path $undoFile -Encoding UTF8
+        Write-Host "      [OK] Script de desfazer salvo em: $undoFile" -ForegroundColor Green
+    }
 
     Write-Host "`n      [OK] $removed chave(s)/valor(es) removido(s). $failed falha(s)." -ForegroundColor Green
     Write-Log "Limpeza de registro: $removed removidos, $failed falhas." "SUCCESS"
@@ -262,38 +363,49 @@ function Clear-RegistryJunk {
 # ---------------------------------------------------------------------------
 
 function Invoke-RegistryScan {
+    param(
+        [switch]$DryRun
+    )
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "  VARREDURA E LIMPEZA DO REGISTRO" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "  Categorias verificadas: Uninstall orfas, SharedDLLs quebradas," -ForegroundColor DarkGray
-    Write-Host "  App Paths quebrados, MUICache obsoleto. Nada de CLSID/COM/hives" -ForegroundColor DarkGray
-    Write-Host "  de sistema - essas ficam de fora por seguranca." -ForegroundColor DarkGray
-    Write-Host "`n  1. Apenas Varrer (relatorio, nada e alterado)"
-    Write-Host "  2. Varrer e Limpar (com backup automatico + confirmacao)"
-    Write-Host "  3. Voltar ao Menu Principal"
+    Write-Host "  Categorias verificadas: Uninstall órfãs, SharedDLLs quebradas," -ForegroundColor DarkGray
+    Write-Host "  App Paths quebrados, MUICache obsoleto, Run/RunOnce órfãos," -ForegroundColor DarkGray
+    Write-Host "  Fontes não instaladas, Extensões Shell órfãs. Nada de CLSID/COM/hives" -ForegroundColor DarkGray
+    Write-Host "  de sistema - essas ficam de fora por segurança." -ForegroundColor DarkGray
+    Write-Host "`n  1. Apenas Varrer (relatório, nada é alterado)"
+    Write-Host "  2. Varrer e Limpar (com backup automático + confirmação)"
+    if ($DryRun) { Write-Host "  3. Modo Simulação (Dry-Run) - mostra o que seria removido" }
+    Write-Host "  4. Voltar ao Menu Principal"
     Write-Host "`n========================================" -ForegroundColor Cyan
 
     $choice = Read-Host "Digite o numero da sua escolha"
     $choice = $choice -replace '\s+', ''
 
-    if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max 3)) {
-        Write-Host "Opcao invalida." -ForegroundColor Red
+    $maxOpt = if ($DryRun) { 3 } else { 4 }
+    if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max $maxOpt)) {
+        Write-Host "Opção inválida." -ForegroundColor Red
         Start-Sleep -Seconds 2
         return
     }
 
-    if ($choice -eq "3") { return }
+    if ($choice -eq "4" -or ($choice -eq "3" -and -not $DryRun)) { return }
 
     $findings = Get-RegistryJunkReport
     Show-RegistryJunkReport -Findings $findings
 
+    if ($choice -eq "1") { return }
+
     if ($choice -eq "2" -and $findings.Count -gt 0) {
-        $confirm = Read-Host "`nConfirmar a exclusao dos $($findings.Count) item(ns) acima? Um backup sera feito antes. (S/N)"
+        $confirm = Read-Host "`nConfirmar a exclusão dos $($findings.Count) item(ns) acima? Um backup será feito antes. (S/N)"
         if ($confirm -match '^[Ss]') {
             Clear-RegistryJunk -Findings $findings
         } else {
-            Write-Host "      Limpeza cancelada pelo usuario." -ForegroundColor Yellow
-            Write-Log "Limpeza de registro cancelada pelo usuario apos revisao do relatorio." "INFO"
+            Write-Host "      Limpeza cancelada pelo usuário." -ForegroundColor Yellow
+            Write-Log "Limpeza de registro cancelada pelo usuário após revisão do relatório." "INFO"
         }
+    } elseif ($choice -eq "3" -and $DryRun -and $findings.Count -gt 0) {
+        Write-Host "`n[DRY-RUN] Itens que seriam removidos:" -ForegroundColor Yellow
+        Clear-RegistryJunk -Findings $findings -DryRun
     }
 }
