@@ -11,6 +11,9 @@ $DefaultConfig = @{
     "ShowFullMacAddress" = $false  # Privacidade: mostrar MAC completo
     "LogRetentionDays" = 7  # Dias para manter logs
     "BackupPath" = ""  # Vazio usa caminho seguro automático
+    "UseWinapp2" = $false
+    "RegistryExclude" = @()
+    "ExportReportPath" = ""
 }
 
 function Get-WMSConfig {

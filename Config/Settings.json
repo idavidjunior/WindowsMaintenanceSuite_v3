@@ -4,5 +4,8 @@
     "BackupPath":  "",
     "LogRetentionDays":  7,
     "AutoLogCleanup":  true,
-    "Theme":  "Dark"
+    "Theme":  "Dark",
+    "UseWinapp2":  false,
+    "RegistryExclude":  [],
+    "ExportReportPath":  ""
 }

@@ -16,6 +16,7 @@
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\SecurityHelper.ps1"
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\Logger.ps1"
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\ConfigManager.ps1"
+. "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\Winapp2Parser.ps1"
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
@@ -40,7 +41,7 @@ function Test-ExcludedPath {
 # ---------------------------------------------------------------------------
 
 function Get-RegistryScanCategories {
-    return @(
+    $baseCategories = @(
         @{
             Name = "Entradas de Desinstalação Órfãs"
             Hives = @(
@@ -137,6 +138,22 @@ function Get-RegistryScanCategories {
             }
         }
     )
+
+    # Opcional: carregar regras Winapp2.ini
+    $cfg = Get-WMSConfig
+    if ($cfg.UseWinapp2) {
+        try {
+            $winapp2Rules = Import-Winapp2Rules
+            if ($winapp2Rules.Count -gt 0) {
+                Write-Host "  [INFO] Adicionando $($winapp2Rules.Count) regras Winapp2..." -ForegroundColor Cyan
+                $baseCategories += $winapp2Rules
+            }
+        } catch {
+            Write-Host "  [AVISO] Falha ao importar Winapp2: $_" -ForegroundColor Yellow
+        }
+    }
+
+return $baseCategories
 }
 
 # ---------------------------------------------------------------------------
