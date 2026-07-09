@@ -1,0 +1,15 @@
+# Generated files
+Logs/
+Reports/
+*.log
+*.csv
+*.html
+*.txt
+
+# Runtime
+node_modules/
+dist/
+
+# Test scripts
+FixEncoding.ps1
+_test_*.ps1
