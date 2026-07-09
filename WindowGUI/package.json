@@ -5,8 +5,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win portable",
-    "dist": "electron-builder --win"
+    "build": "electron-builder --win dir",
+    "dist": "electron-builder --win portable --x64"
   },
   "build": {
     "appId": "com.wms.gui",
@@ -15,33 +15,31 @@
       "output": "dist"
     },
     "win": {
-      "target": ["portable", "nsis"],
+      "target": ["portable"],
       "icon": null
     },
     "portable": {
       "artifactName": "WindowsMaintenanceSuite.exe"
     },
-    "nsis": {
-      "oneClick": true,
-      "runAfterFinish": true
-    },
+    "asar": true,
+    "asarUnpack": [],
     "files": [
-      "main.js",
-      "preload.js",
-      "index.html",
-      "styles.css",
-      "script.js",
-      "gui-run.ps1",
-      "../WMS.bat",
-      "../Modules/**/*",
-      "../Core/**/*",
-      "../Config/**/*"
+      "**/*",
+      "!node_modules/**"
     ],
     "extraResources": [
       {
         "from": "..",
         "to": "app",
-        "filter": ["**/*", "!WindowGUI/**", "!node_modules/**", "!.git/**"]
+        "filter": [
+          "**/*",
+          "!WindowGUI/**",
+          "!WindowGUI/node_modules/**",
+          "!.git/**",
+          "!Logs/**",
+          "!History/**",
+          "!Reports/**"
+        ]
       }
     ]
   },
