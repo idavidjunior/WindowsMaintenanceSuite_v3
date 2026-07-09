@@ -32,7 +32,10 @@ function checkApi() {
 }
 
 async function runOption(opt) {
-  if (!checkApi()) return;
+  if (!checkApi()) {
+    alert('[WMS] API no conectada. O Electron no exps o window.api corretamente.\nExecute via "npm start" ou use o win-unpacked compilado.');
+    return;
+  }
   const name = optionNames[opt] || 'Opo ' + opt;
   setStatus('running', 'Executando: ' + name + '...');
 
