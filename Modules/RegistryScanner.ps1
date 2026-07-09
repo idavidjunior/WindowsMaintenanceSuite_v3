@@ -176,7 +176,8 @@ function Get-RegistryJunkReport {
     foreach ($cat in $categories) {
         $catIndex++
         $baseActivity = "Varrendo registro"
-        Write-Progress -Activity $baseActivity -Status "$($cat.Name)..." -PercentComplete ([int](($catIndex - 1) / $totalCategories * 100))
+        $basePct = if ($totalCategories -gt 0) { [int](($catIndex - 1) * 100 / $totalCategories) } else { 0 }
+        Write-Progress -Activity $baseActivity -Status "$($cat.Name)..." -PercentComplete $basePct
 
         foreach ($hivePath in $cat.Hives) {
             if (-not (Test-Path $hivePath -ErrorAction SilentlyContinue)) { continue }
@@ -191,8 +192,8 @@ function Get-RegistryJunkReport {
                     $i = 0
                     foreach ($v in $valueNames) {
                         $i++
-                        if ($total -gt 0) {
-                            $pct = [int]([Math]::Round((($catIndex - 1) / $totalCategories) * 100 + ($i / $total) * (100 / $totalCategories)))
+                        if ($total -gt 0 -and $totalCategories -gt 0) {
+                            $pct = [Math]::Min(100, [int](($catIndex - 1) * 100 / $totalCategories + $i * 100 / $total / $totalCategories))
                             Write-Progress -Activity $baseActivity -Status "$($cat.Name): $($v.Name)" -PercentComplete $pct
                         }
                         $checkTarget = if ($cat.ValueNameIsPath) { $v.Name } else { $v.Value }
@@ -217,8 +218,8 @@ function Get-RegistryJunkReport {
                     $i = 0
                     foreach ($key in $subKeys) {
                         $i++
-                        if ($total -gt 0) {
-                            $pct = [int](($catIndex - 1) / $totalCategories * 100 + ($i / $total) * (100 / $totalCategories))
+                        if ($total -gt 0 -and $totalCategories -gt 0) {
+                            $pct = [Math]::Min(100, [int](($catIndex - 1) * 100 / $totalCategories + $i * 100 / $total / $totalCategories))
                             Write-Progress -Activity $baseActivity -Status "$($cat.Name): $($key.PSChildName)" -PercentComplete $pct
                         }
                         $fullPath = $key.PSPath
@@ -227,7 +228,7 @@ function Get-RegistryJunkReport {
                             if (& $cat.Check $key) {
                                 $findings.Add([PSCustomObject]@{
                                     Category  = $cat.Name
-                                    KeyPath   = ($key.PSPath -replace '^Microsoft\.PowerShell\.Core\\Registry::', '')
+                                    KeyPath   = ($key.PSPath -replace '^Microsoft\.PowerShell\.Core\\Registry::', '' -replace '^HKEY_LOCAL_MACHINE', 'HKLM:' -replace '^HKEY_CURRENT_USER', 'HKCU:')
                                     ValueName = $null
                                     Detail    = $key.PSChildName
                                 })
@@ -333,7 +334,8 @@ function Clear-RegistryJunk {
 
     foreach ($item in $Findings) {
         $i++
-        Write-Progress -Activity "Limpando registro" -Status "$($item.Category): $($item.Detail)" -PercentComplete [int]($i / $total * 100)
+        $pct = if ($total -gt 0) { [Math]::Min(100, [int]($i * 100 / $total)) } else { 0 }
+        Write-Progress -Activity "Limpando registro" -Status "$($item.Category): $($item.Detail)" -PercentComplete $pct
         try {
             if ($item.ValueName) {
                 if (-not $DryRun) {
