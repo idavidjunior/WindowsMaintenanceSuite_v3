@@ -8,34 +8,39 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div id="apiError" class="api-error hidden">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    API desconectada. Os botes no funcionaro.
+  </div>
+
   <div class="container">
     <header>
       <div class="header-icon">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#64ffda" stroke-width="1.5">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#64ffda" stroke-width="1.5">
           <rect x="2" y="2" width="20" height="20" rx="4" stroke="currentColor"/>
           <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M7 2v2M17 2v2M2 7h20" stroke="currentColor" stroke-linecap="round"/>
         </svg>
       </div>
       <h1>Windows Maintenance Suite</h1>
-      <p class="subtitle">Ferramentas de manutenção, limpeza e diagnóstico do sistema</p>
+      <p class="subtitle">Ferramentas de manuteno, limpeza e diagnstico do sistema</p>
     </header>
 
     <div class="grid">
       <section class="card" data-category="maintenance">
         <div class="card-header">
-          <span class="card-icon">&#x1F527;</span>
-          <h2>Manutenção</h2>
+          <svg class="card-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64ffda" stroke-width="2" stroke-linecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          <h2>Manuteno</h2>
         </div>
         <div class="card-body">
-          <button class="btn" data-opt="1"><span class="btn-label">Manutenção Essencial</span><span class="btn-num">1</span></button>
-          <button class="btn" data-opt="2"><span class="btn-label">Manutenção Completa</span><span class="btn-num">2</span></button>
+          <button class="btn" data-opt="1"><span class="btn-label">Manuteno Essencial</span><span class="btn-num">1</span></button>
+          <button class="btn" data-opt="2"><span class="btn-label">Manuteno Completa</span><span class="btn-num">2</span></button>
         </div>
       </section>
 
       <section class="card" data-category="cleaning">
         <div class="card-header">
-          <span class="card-icon">&#x1F9F9;</span>
+          <svg class="card-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffd93d" stroke-width="2" stroke-linecap="round"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></svg>
           <h2>Limpeza & Leveza</h2>
         </div>
         <div class="card-body">
@@ -46,12 +51,12 @@
 
       <section class="card" data-category="diagnostics">
         <div class="card-header">
-          <span class="card-icon">&#x1F4CA;</span>
-          <h2>Diagnósticos</h2>
+          <svg class="card-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6bcb77" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <h2>Diagnsticos</h2>
         </div>
         <div class="card-body">
-          <button class="btn" data-opt="5"><span class="btn-label">Diagnóstico Aprofundado</span><span class="btn-num">5</span></button>
-          <button class="btn" data-opt="6"><span class="btn-label">Diagnóstico Inteligente (SMART)</span><span class="btn-num">6</span></button>
+          <button class="btn" data-opt="5"><span class="btn-label">Diagnstico Aprofundado</span><span class="btn-num">5</span></button>
+          <button class="btn" data-opt="6"><span class="btn-label">Diagnstico Inteligente (SMART)</span><span class="btn-num">6</span></button>
           <button class="btn" data-opt="7"><span class="btn-label">Monitor de Desempenho</span><span class="btn-num">7</span></button>
           <button class="btn" data-opt="8"><span class="btn-label">Gerenciador de Drivers</span><span class="btn-num">8</span></button>
         </div>
@@ -59,22 +64,22 @@
 
       <section class="card" data-category="optimization">
         <div class="card-header">
-          <span class="card-icon">&#x2699;&#xFE0F;</span>
-          <h2>Otimização & Segurança</h2>
+          <svg class="card-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8892b0" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          <h2>Otimizao & Segurana</h2>
         </div>
         <div class="card-body">
           <button class="btn" data-opt="9"><span class="btn-label">Ajustes de Sistema (Tweaks)</span><span class="btn-num">9</span></button>
           <button class="btn" data-opt="10"><span class="btn-label">Backup do Registro</span><span class="btn-num">10</span></button>
           <button class="btn danger" data-opt="11"><span class="btn-label">Restaurar Registro</span><span class="btn-badge">CUIDADO!</span><span class="btn-num">11</span></button>
-          <button class="btn" data-opt="12"><span class="btn-label">Manutenção Agendada</span><span class="btn-num">12</span></button>
-          <button class="btn" data-opt="13"><span class="btn-label">Verificação de Vírus</span><span class="btn-num">13</span></button>
+          <button class="btn" data-opt="12"><span class="btn-label">Manuteno Agendada</span><span class="btn-num">12</span></button>
+          <button class="btn" data-opt="13"><span class="btn-label">Verificao de Vrus</span><span class="btn-num">13</span></button>
           <button class="btn" data-opt="14"><span class="btn-label">Varredura do Registro</span><span class="btn-num">14</span></button>
           <button class="btn" data-opt="15"><span class="btn-label">Ferramentas Nativas</span><span class="btn-num">15</span></button>
-          <button class="btn" data-opt="16"><span class="btn-label">Analisador de Espaço</span><span class="btn-num">16</span></button>
-          <button class="btn" data-opt="17"><span class="btn-label">Auto-Atualização</span><span class="btn-num">17</span></button>
+          <button class="btn" data-opt="16"><span class="btn-label">Analisador de Espao</span><span class="btn-num">16</span></button>
+          <button class="btn" data-opt="17"><span class="btn-label">Auto-Atualizao</span><span class="btn-num">17</span></button>
           <button class="btn" data-opt="18"><span class="btn-label">Gerenciador de Pacotes</span><span class="btn-num">18</span></button>
-          <button class="btn" data-opt="19"><span class="btn-label">Perfis de Otimização</span><span class="btn-num">19</span></button>
-          <button class="btn" data-opt="20"><span class="btn-label">Hardening de Segurança</span><span class="btn-num">20</span></button>
+          <button class="btn" data-opt="19"><span class="btn-label">Perfis de Otimizao</span><span class="btn-num">19</span></button>
+          <button class="btn" data-opt="20"><span class="btn-label">Hardening de Segurana</span><span class="btn-num">20</span></button>
         </div>
       </section>
     </div>
@@ -82,12 +87,10 @@
     <footer>
       <div class="status-bar" id="statusBar">
         <div class="status-indicator" id="statusIndicator"></div>
-        <span id="statusText">Pronto. Selecione uma opção acima.</span>
+        <span id="statusText">Carregando...</span>
       </div>
       <button class="btn-exit" id="btnExit">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
-        </svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
         Sair
       </button>
     </footer>

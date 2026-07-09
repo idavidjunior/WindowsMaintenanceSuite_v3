@@ -1,7 +1,16 @@
 param([int]$Option)
 
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$projectRoot = Resolve-Path "$scriptRoot\.."
+$candidates = @(
+    (Resolve-Path "$scriptRoot\.." -ErrorAction SilentlyContinue),
+    (Resolve-Path "$scriptRoot\..\.." -ErrorAction SilentlyContinue)
+)
+$projectRoot = $null
+foreach ($c in $candidates) {
+    if ($c -and (Test-Path (Join-Path $c "Core\Logger.ps1"))) { $projectRoot = $c; break }
+}
+if (-not $projectRoot) { $projectRoot = Resolve-Path "$scriptRoot\.." }
+
 $corePath = Join-Path $projectRoot "Core"
 $modPath = Join-Path $projectRoot "Modules"
 
