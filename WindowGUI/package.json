@@ -1,0 +1,52 @@
+{
+  "name": "windows-maintenance-suite",
+  "version": "1.0.0",
+  "description": "Windows Maintenance Suite - Interface Visual",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win portable",
+    "dist": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.wms.gui",
+    "productName": "Windows Maintenance Suite",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": ["portable", "nsis"],
+      "icon": null
+    },
+    "portable": {
+      "artifactName": "WindowsMaintenanceSuite.exe"
+    },
+    "nsis": {
+      "oneClick": true,
+      "runAfterFinish": true
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "styles.css",
+      "script.js",
+      "gui-run.ps1",
+      "../WMS.bat",
+      "../Modules/**/*",
+      "../Core/**/*",
+      "../Config/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "..",
+        "to": "app",
+        "filter": ["**/*", "!WindowGUI/**", "!node_modules/**", "!.git/**"]
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}
