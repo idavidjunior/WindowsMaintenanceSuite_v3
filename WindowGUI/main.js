@@ -47,6 +47,10 @@ function getProjectRoot() {
 }
 
 function getGuiRunPath() {
+  if (app.isPackaged) {
+    const unpacked = path.join(process.resourcesPath, 'app.asar.unpacked', 'gui-run.ps1');
+    if (fs.existsSync(unpacked)) return unpacked;
+  }
   const root = getProjectRoot();
   const candidates = [
     path.join(root, 'WindowGUI', 'gui-run.ps1'),

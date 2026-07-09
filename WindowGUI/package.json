@@ -22,7 +22,7 @@
       "artifactName": "WindowsMaintenanceSuite.exe"
     },
     "asar": true,
-    "asarUnpack": [],
+    "asarUnpack": ["gui-run.ps1"],
     "files": [
       "**/*",
       "!node_modules/**"
