@@ -14,7 +14,7 @@ if (-not $projectRoot) { $projectRoot = Resolve-Path "$scriptRoot\.." }
 $corePath = Join-Path $projectRoot "Core"
 $modPath = Join-Path $projectRoot "Modules"
 
-@('Logger.ps1','ConfigManager.ps1','SecurityHelper.ps1') | ForEach-Object {
+@('Logger.ps1','ConfigManager.ps1','SecurityHelper.ps1','Scheduler.ps1') | ForEach-Object {
     Import-Module (Join-Path $corePath $_) -Force -DisableNameChecking
 }
 

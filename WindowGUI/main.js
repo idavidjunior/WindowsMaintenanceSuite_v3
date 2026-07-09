@@ -59,7 +59,7 @@ function getGuiRunPath() {
 ipcMain.handle('run-option', async (event, optionNumber) => {
   const scriptPath = getGuiRunPath();
   const psCmd = `powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}" -Option ${optionNumber}`;
-  const interactive = [3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 20].includes(optionNumber);
+  const interactive = [2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 20].includes(optionNumber);
 
   return new Promise((resolve) => {
     if (interactive) {

@@ -210,4 +210,4 @@ function Invoke-PerformanceMonitor {
     }
 }
 
-Export-ModuleMember -Function *
+

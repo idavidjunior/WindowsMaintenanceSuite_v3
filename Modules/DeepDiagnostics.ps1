@@ -89,4 +89,4 @@ function Invoke-DeepDiagnostics {
     Update-WMSHistory -Key "LastDeepDiag" -Value (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 }
 
-Export-ModuleMember -Function *
+

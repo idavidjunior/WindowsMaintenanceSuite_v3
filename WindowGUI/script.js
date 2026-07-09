@@ -3,7 +3,7 @@ const statusIndicator = document.getElementById('statusIndicator');
 const btnExit = document.getElementById('btnExit');
 const apiError = document.getElementById('apiError');
 
-const interactiveOptions = [3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 20];
+const interactiveOptions = [2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 20];
 
 const optionNames = {
   1:'Manuteno Essencial',2:'Manuteno Completa',3:'Limpeza Profunda',

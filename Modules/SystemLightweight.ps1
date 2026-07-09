@@ -557,4 +557,4 @@ function Invoke-SystemLightweight {
     }
 }
 
-Export-ModuleMember -Function *
+

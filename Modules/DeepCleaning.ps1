@@ -318,4 +318,4 @@ function Invoke-DeepCleaning {
     if ($choice -eq "11") { return }
 }
 
-Export-ModuleMember -Function *
+

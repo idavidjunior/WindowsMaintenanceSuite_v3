@@ -76,4 +76,3 @@ function Invoke-ProfileMenu {
     }
 }
 
-Export-ModuleMember -Function *

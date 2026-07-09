@@ -148,4 +148,4 @@ function Invoke-EssentialMaintenance {
 }
 
 
-Export-ModuleMember -Function *
+

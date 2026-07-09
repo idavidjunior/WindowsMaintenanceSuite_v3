@@ -217,4 +217,4 @@ function Invoke-QuickToolsMenu {
     }
 }
 
-Export-ModuleMember -Function *
+

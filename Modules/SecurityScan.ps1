@@ -115,4 +115,4 @@ function Invoke-SecurityScan {
     }
 }
 
-Export-ModuleMember -Function *
+

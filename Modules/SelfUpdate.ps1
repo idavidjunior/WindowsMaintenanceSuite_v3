@@ -52,4 +52,4 @@ function Update-WMS {
         Pop-Location
     }
 }
-Export-ModuleMember -Function *
+

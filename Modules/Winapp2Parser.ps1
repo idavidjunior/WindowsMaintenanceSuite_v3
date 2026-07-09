@@ -90,4 +90,4 @@ function Import-Winapp2Rules {
 }
 
 
-Export-ModuleMember -Function *
+

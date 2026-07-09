@@ -57,4 +57,4 @@ function Invoke-SmartDiagnostics {
 }
 
 
-Export-ModuleMember -Function *
+

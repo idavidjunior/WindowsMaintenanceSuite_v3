@@ -1,0 +1,137 @@
+﻿[2026-07-09 14:35:26] [INFO] Iniciando Analisador de Espaco em Disco.
+[2026-07-09 14:35:49] [INFO] Analise de programas instalados concluida: 78 programas listados.
+[2026-07-09 14:40:33] [INFO] Iniciando Analisador de Espaco em Disco.
+[2026-07-09 14:45:40] [INFO] Iniciando Analisador de Espaco em Disco.
+[2026-07-09 14:45:55] [INFO] Analise de programas instalados concluida: 78 programas listados.
+[2026-07-09 14:48:24] [INFO] Analisador de espaco concluido. Disco C: com 1.87 GB livres.
+[2026-07-09 14:48:51] [INFO] Iniciando Analisador de Espaco em Disco.
+[2026-07-09 14:51:00] [INFO] Desinstalacao iniciada: Microsoft .NET SDK 8.0.422 (x64)
+[2026-07-09 14:51:01] [WARNING] Desinstalacao de Microsoft .NET Standard Targeting Pack - 2.1.0 (x64) retornou codigo 1605.
+[2026-07-09 14:51:02] [WARNING] Desinstalacao de Microsoft .NET Toolset 8.0.422 (x64) retornou codigo 1605.
+[2026-07-09 14:51:03] [WARNING] Desinstalacao de Microsoft .NET Targeting Pack - 8.0.28 (x64) retornou codigo 1605.
+[2026-07-09 14:51:04] [WARNING] Desinstalacao de Microsoft .NET Host FX Resolver - 8.0.28 (x64) retornou codigo 1605.
+[2026-07-09 14:51:06] [WARNING] Desinstalacao de Microsoft .NET AppHost Pack - 8.0.28 (x64) retornou codigo 1605.
+[2026-07-09 14:51:07] [WARNING] Desinstalacao de Microsoft .NET 8.0 Templates 8.0.422 (x64) retornou codigo 1605.
+[2026-07-09 14:51:08] [WARNING] Desinstalacao de Microsoft .NET AppHost Pack - 8.0.28 (x64_arm64) retornou codigo 1605.
+[2026-07-09 14:51:09] [WARNING] Desinstalacao de Microsoft .NET Host - 8.0.28 (x64) retornou codigo 1605.
+[2026-07-09 14:51:10] [WARNING] Desinstalacao de Microsoft .NET AppHost Pack - 8.0.28 (x64_x86) retornou codigo 1605.
+[2026-07-09 14:51:11] [INFO] Desinstalacao iniciada: Microsoft Edge
+[2026-07-09 14:51:12] [SUCCESS] Desinstalado: Microsoft Office Proofing (Portuguese (Brazil)) 2010
+[2026-07-09 14:51:14] [SUCCESS] Desinstalado: Microsoft Office Proof (English) 2010
+[2026-07-09 14:51:15] [SUCCESS] Desinstalado: Microsoft Office Proof (Portuguese (Brazil)) 2010
+[2026-07-09 14:51:23] [SUCCESS] Desinstalado: Microsoft Office Shared MUI (Portuguese (Brazil)) 2010
+[2026-07-09 14:51:26] [SUCCESS] Desinstalado: Microsoft Office Word MUI (Portuguese (Brazil)) 2010
+[2026-07-09 14:51:29] [SUCCESS] Desinstalado: Microsoft Office Publisher MUI (Portuguese (Brazil)) 2010
+[2026-07-09 14:51:30] [SUCCESS] Desinstalado: Microsoft Office Shared 32-bit MUI (Portuguese (Brazil)) 2010
+[2026-07-09 14:51:37] [SUCCESS] Desinstalado: Microsoft Office Groove MUI (Portuguese (Brazil)) 2010
+[2026-07-09 14:51:41] [SUCCESS] Desinstalado: Microsoft Office InfoPath MUI (Portuguese (Brazil)) 2010
+[2026-07-09 14:51:49] [SUCCESS] Desinstalado: Microsoft Office Access MUI (Portuguese (Brazil)) 2010
+[2026-07-09 14:51:52] [SUCCESS] Desinstalado: Microsoft Office Excel MUI (Portuguese (Brazil)) 2010
+[2026-07-09 14:51:54] [SUCCESS] Desinstalado: Microsoft Office Outlook MUI (Portuguese (Brazil)) 2010
+[2026-07-09 14:51:56] [SUCCESS] Desinstalado: Microsoft Office PowerPoint MUI (Portuguese (Brazil)) 2010
+[2026-07-09 14:52:11] [SUCCESS] Desinstalado: Microsoft Office Office 32-bit Components 2010
+[2026-07-09 14:52:13] [SUCCESS] Desinstalado: Microsoft Office OneNote MUI (Portuguese (Brazil)) 2010
+[2026-07-09 14:52:14] [INFO] Desinstalacao iniciada: Microsoft Office 2010 Service Pack 1 (SP1)
+[2026-07-09 14:52:16] [INFO] Desinstalacao iniciada: Microsoft Office 2010 Service Pack 1 (SP1)
+[2026-07-09 14:52:17] [INFO] Desinstalacao iniciada: Microsoft Office 2010 Service Pack 1 (SP1)
+[2026-07-09 14:52:18] [INFO] Desinstalacao iniciada: Microsoft Office 2010 Service Pack 1 (SP1)
+[2026-07-09 14:52:19] [INFO] Desinstalacao iniciada: Microsoft Office 2010 Service Pack 1 (SP1)
+[2026-07-09 14:52:20] [INFO] Desinstalacao iniciada: Microsoft Office 2010 Service Pack 1 (SP1)
+[2026-07-09 14:52:21] [INFO] Desinstalacao iniciada: Microsoft Office 2010 Service Pack 1 (SP1)
+[2026-07-09 14:52:22] [INFO] Desinstalacao iniciada: Microsoft Office 2010 Service Pack 1 (SP1)
+[2026-07-09 14:52:23] [INFO] Desinstalacao iniciada: Microsoft Office 2010 Service Pack 1 (SP1)
+[2026-07-09 14:52:24] [INFO] Desinstalacao iniciada: Microsoft Office 2010 Service Pack 1 (SP1)
+[2026-07-09 14:52:26] [INFO] Desinstalacao iniciada: Microsoft Office 2010 Service Pack 1 (SP1)
+[2026-07-09 14:52:27] [INFO] Desinstalacao iniciada: Microsoft Office 2010 Service Pack 1 (SP1)
+[2026-07-09 14:52:28] [INFO] Desinstalacao iniciada: Microsoft Office 2010 Service Pack 1 (SP1)
+[2026-07-09 14:52:29] [INFO] Desinstalacao iniciada: Microsoft Office 2010 Service Pack 1 (SP1)
+[2026-07-09 14:52:31] [WARNING] Desinstalacao de Microsoft Office Professional Plus 2010 retornou codigo 1603.
+[2026-07-09 14:52:32] [SUCCESS] Desinstalado: Microsoft Visual C++ 2022 X64 Minimum Runtime - 14.51.36247
+[2026-07-09 14:52:33] [SUCCESS] Desinstalado: Microsoft Visual C++ 2022 X64 Additional Runtime - 14.51.36247
+[2026-07-09 14:52:42] [INFO] Iniciando Analisador de Espaco em Disco.
+[2026-07-09 14:53:33] [INFO] Desinstalacao iniciada: Microsoft Office Professional Plus 2010
+[2026-07-09 14:53:38] [INFO] Iniciando Analisador de Espaco em Disco.
+[2026-07-09 14:54:15] [INFO] Iniciando Analisador de Espaco em Disco.
+[2026-07-09 14:54:25] [INFO] Desinstalacao iniciada: Microsoft Edge
+[2026-07-09 14:54:27] [INFO] Desinstalacao iniciada: Microsoft Office 2010 Service Pack 1 (SP1)
+[2026-07-09 14:54:32] [INFO] Desinstalacao iniciada: Microsoft Office Professional Plus 2010
+[2026-07-09 14:54:33] [SUCCESS] Desinstalado: Microsoft Visual C++ 2022 X64 Minimum Runtime - 14.51.36247
+[2026-07-09 14:54:34] [SUCCESS] Desinstalado: Microsoft Visual C++ 2022 X64 Additional Runtime - 14.51.36247
+[2026-07-09 14:57:12] [INFO] Iniciando Varredura e Limpeza do Registro.
+[2026-07-09 14:59:27] [INFO] Varredura de registro concluída: 72 itens órfãos encontrados.
+[2026-07-09 14:59:49] [INFO] Iniciando Varredura e Limpeza do Registro.
+[2026-07-09 15:02:01] [INFO] Varredura de registro concluída: 72 itens órfãos encontrados.
+[2026-07-09 15:02:26] [SUCCESS] Backup pontual de 16 chaves de registro antes da limpeza.
+[2026-07-09 15:02:26] [WARNING] Falha ao remover HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{90140000-001F-0C0A-1000-0000000FF1CE}_Office14.PROPLUS_{1779650B-2E44-4A19-8DF6-3866D645764A} (): Não é possível localizar o caminho 'C:\Windows\system32\HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{90140000-001F-0C0A-1000-0000000FF1CE}_Office14.PROPLUS_{1779650B-2E44-4A19-8DF6-3866D645764A}' porque ele não existe.
+[2026-07-09 15:02:26] [WARNING] Falha ao remover HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Glary Utilities (): Não é possível localizar o caminho 'C:\Windows\system32\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Glary Utilities' porque ele não existe.
+[2026-07-09 15:02:26] [WARNING] Falha ao remover HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{0e3bb569-69d6-4c34-bff9-c2f81db5e5f0} (): Não é possível localizar o caminho 'C:\Windows\system32\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{0e3bb569-69d6-4c34-bff9-c2f81db5e5f0}' porque ele não existe.
+[2026-07-09 15:02:26] [WARNING] Falha ao remover HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{115DF11E-4B4C-4EA9-9A79-00DB0C7EF02D} (): Não é possível localizar o caminho 'C:\Windows\system32\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{115DF11E-4B4C-4EA9-9A79-00DB0C7EF02D}' porque ele não existe.
+[2026-07-09 15:02:26] [WARNING] Falha ao remover HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\79ccb423f0393ba2feb8b4043f462c6e (): Não é possível localizar o caminho 'C:\Windows\system32\HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\79ccb423f0393ba2feb8b4043f462c6e' porque ele não existe.
+[2026-07-09 15:02:26] [WARNING] Falha ao remover HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\d074f30d-5f88-5885-b075-be1348cc7676 (): Não é possível localizar o caminho 'C:\Windows\system32\HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\d074f30d-5f88-5885-b075-be1348cc7676' porque ele não existe.
+[2026-07-09 15:02:26] [WARNING] Falha ao remover HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{e9b7c837-5066-4f10-851a-69179f987b18} (): Não é possível localizar o caminho 'C:\Windows\system32\HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{e9b7c837-5066-4f10-851a-69179f987b18}' porque ele não existe.
+[2026-07-09 15:02:28] [WARNING] Falha ao remover HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\WORDPAD.EXE (): Não é possível localizar o caminho 'C:\Windows\system32\HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\WORDPAD.EXE' porque ele não existe.
+[2026-07-09 15:02:28] [WARNING] Falha ao remover HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\WRITE.EXE (): Não é possível localizar o caminho 'C:\Windows\system32\HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\WRITE.EXE' porque ele não existe.
+[2026-07-09 15:02:28] [WARNING] Falha ao remover HKEY_LOCAL_MACHINE\SOFTWARE\Classes\*\shellex (): Não é possível localizar o caminho 'C:\Windows\system32\HKEY_LOCAL_MACHINE\SOFTWARE\Classes' porque ele não existe.
+[2026-07-09 15:02:28] [WARNING] Falha ao remover HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Drive\shellex (): Não é possível localizar o caminho 'C:\Windows\system32\HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Drive\shellex' porque ele não existe.
+[2026-07-09 15:02:28] [WARNING] Falha ao remover HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Folder\shellex (): Não é possível localizar o caminho 'C:\Windows\system32\HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Folder\shellex' porque ele não existe.
+[2026-07-09 15:02:28] [WARNING] Falha ao remover HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Drive\ShellEx\ContextMenuHandlers (): Não é possível localizar o caminho 'C:\Windows\system32\HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Drive\ShellEx\ContextMenuHandlers' porque ele não existe.
+[2026-07-09 15:02:28] [WARNING] Falha ao remover HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Drive\ShellEx\PropertySheetHandlers (): Não é possível localizar o caminho 'C:\Windows\system32\HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Drive\ShellEx\PropertySheetHandlers' porque ele não existe.
+[2026-07-09 15:02:28] [SUCCESS] Limpeza de registro: 58 removidos, 14 falhas.
+[2026-07-09 15:04:41] [INFO] Iniciando Analisador de Espaco em Disco.
+[2026-07-09 15:09:39] [INFO] Iniciando Analisador de Espaco em Disco.
+[2026-07-09 15:09:46] [INFO] Analise de programas instalados concluida: 38 programas listados.
+[2026-07-09 15:12:35] [INFO] Analisador de espaco concluido. Disco C: com 3.47 GB livres.
+[2026-07-09 15:12:40] [INFO] Iniciando Analisador de Espaco em Disco.
+[2026-07-09 17:51:03] [INFO] Iniciando Diagnostico Profundo...
+[2026-07-09 17:51:08] [SUCCESS] Relatorio gerado em: C:\Users\Playtec-bancada\Desktop\Downloads\WindowsMaintenanceSuite_v3-main\WindowsMaintenanceSuite_v3-main\Modules\..\Reports\DeepDiag_20260709_1751.txt
+[2026-07-09 17:51:08] [SUCCESS] Relatorios TXT/CSV/HTML gerados em Reports.
+[2026-07-09 17:51:22] [INFO] Iniciando Diagnostico SMART dos Discos...
+[2026-07-09 17:51:29] [SUCCESS] Diagnostico SMART concluído.
+[2026-07-09 17:54:07] [INFO] Iniciando Diagnostico Profundo...
+[2026-07-09 17:54:09] [SUCCESS] Relatorio gerado em: C:\Users\Playtec-bancada\Desktop\Downloads\WindowsMaintenanceSuite_v3-main\WindowsMaintenanceSuite_v3-main\Modules\..\Reports\DeepDiag_20260709_1754.txt
+[2026-07-09 17:54:21] [INFO] Iniciando Diagnostico Profundo...
+[2026-07-09 17:54:23] [SUCCESS] Relatorio gerado em: C:\Users\Playtec-bancada\Desktop\Downloads\WindowsMaintenanceSuite_v3-main\WindowsMaintenanceSuite_v3-main\Modules\..\Reports\DeepDiag_20260709_1754.txt
+[2026-07-09 17:54:23] [SUCCESS] Relatorios TXT/CSV/HTML gerados em Reports.
+[2026-07-09 17:54:31] [INFO] Iniciando Manutencao Essencial...
+[2026-07-09 17:54:32] [INFO] Criando Ponto de restauração do Sistema...
+[2026-07-09 17:54:33] [WARNING] Falha ao criar ponto de restauração. O servico pode estar desativado.
+[2026-07-09 17:54:33] [INFO] Limpando arquivos temporarios...
+[2026-07-09 17:54:34] [SUCCESS] Limpeza de arquivos temporarios concluida (0 arquivos).
+[2026-07-09 17:54:34] [INFO] Limpando cache de DNS...
+[2026-07-09 17:54:34] [SUCCESS] Cache de DNS limpo.
+[2026-07-09 17:54:34] [INFO] Limpando cache do Windows Update...
+[2026-07-09 17:54:34] [ERROR] Falha ao limpar cache do Windows Update.
+[2026-07-09 17:54:34] [INFO] Executando SFC /scannow (Isso pode demorar)...
+[2026-07-09 17:54:35] [WARNING] SFC encontrou erros mas conseguiu corrigi-los.
+[2026-07-09 17:54:35] [INFO] Executando DISM RestoreHealth...
+[2026-07-09 17:54:36] [ERROR] DISM falhou ao restaurar a imagem.
+[2026-07-09 17:54:36] [INFO] Executando CHKDSK /scan...
+[2026-07-09 17:54:36] [INFO] CHKDSK concluído.
+[2026-07-09 17:54:36] [INFO] Otimizando discos (Defrag/Trim)...
+[2026-07-09 17:54:36] [SUCCESS] Otimizacao de disco concluida.
+[2026-07-09 17:54:37] [SUCCESS] Manutencao Essencial concluida com sucesso! (~0.08 GB liberados)
+[2026-07-09 17:54:45] [INFO] Iniciando Manutencao Completa (Ultimate)...
+[2026-07-09 17:54:45] [INFO] Criando Ponto de restauração do Sistema...
+[2026-07-09 17:54:47] [WARNING] Falha ao criar ponto de restauração. O servico pode estar desativado.
+[2026-07-09 17:54:47] [INFO] Iniciando Manutencao Essencial...
+[2026-07-09 17:54:47] [INFO] Criando Ponto de restauração do Sistema...
+[2026-07-09 17:54:48] [WARNING] Falha ao criar ponto de restauração. O servico pode estar desativado.
+[2026-07-09 17:54:48] [INFO] Limpando arquivos temporarios...
+[2026-07-09 17:54:49] [SUCCESS] Limpeza de arquivos temporarios concluida (0 arquivos).
+[2026-07-09 17:54:49] [INFO] Limpando cache de DNS...
+[2026-07-09 17:54:49] [SUCCESS] Cache de DNS limpo.
+[2026-07-09 17:54:49] [INFO] Limpando cache do Windows Update...
+[2026-07-09 17:54:49] [ERROR] Falha ao limpar cache do Windows Update.
+[2026-07-09 17:54:49] [INFO] Executando SFC /scannow (Isso pode demorar)...
+[2026-07-09 17:54:50] [WARNING] SFC encontrou erros mas conseguiu corrigi-los.
+[2026-07-09 17:54:50] [INFO] Executando DISM RestoreHealth...
+[2026-07-09 17:54:51] [ERROR] DISM falhou ao restaurar a imagem.
+[2026-07-09 17:54:51] [INFO] Executando CHKDSK /scan...
+[2026-07-09 17:54:51] [INFO] CHKDSK concluído.
+[2026-07-09 17:54:51] [INFO] Otimizando discos (Defrag/Trim)...
+[2026-07-09 17:54:51] [SUCCESS] Otimizacao de disco concluida.
+[2026-07-09 17:54:52] [SUCCESS] Manutencao Essencial concluida com sucesso! (~0 GB liberados)
+[2026-07-09 17:54:52] [INFO] Iniciando Verificacao Rapida do Windows Defender...
+[2026-07-09 18:04:06] [INFO] Iniciando Diagnostico Profundo...
+[2026-07-09 18:04:08] [SUCCESS] Relatorio gerado em: C:\Users\Playtec-bancada\Desktop\Downloads\WindowsMaintenanceSuite_v3-main\WindowsMaintenanceSuite_v3-main\Modules\..\Reports\DeepDiag_20260709_1804.txt
+[2026-07-09 18:04:08] [SUCCESS] Relatorios TXT/CSV/HTML gerados em Reports.

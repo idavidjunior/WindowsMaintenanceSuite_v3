@@ -1,0 +1,16 @@
+﻿====================================================
+        RELATORIO DE DIAGNOSTICO PROFUNDO
+        Data: 07/05/2026 20:04:08
+====================================================
+
+[CPU]
+Modelo: Intel(R) Core(TM) i3-5005U CPU @ 2.00GHz
+Nucleos: 2
+Threads: 4
+
+[RAM]
+Total: 3.92 GB
+Modulo: 4GB | Velocidade: 1600MHz
+
+[ARMAZENAMENTO]
+Disco C: | Livre: 16.16 GB / Total: 118.68 GB

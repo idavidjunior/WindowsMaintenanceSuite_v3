@@ -2106,4 +2106,4 @@ function Invoke-SystemTweaks {
 }
 
 
-Export-ModuleMember -Function *
+

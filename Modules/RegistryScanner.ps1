@@ -419,4 +419,4 @@ function Invoke-RegistryScan {
     }
 }
 
-Export-ModuleMember -Function *
+

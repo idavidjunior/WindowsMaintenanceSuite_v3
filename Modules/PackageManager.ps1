@@ -78,4 +78,3 @@ function Invoke-PackageManagerMenu {
     }
 }
 
-Export-ModuleMember -Function *

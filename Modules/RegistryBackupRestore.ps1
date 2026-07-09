@@ -267,4 +267,4 @@ function Restore-TweaksConfig {
 }
 
 
-Export-ModuleMember -Function *
+

@@ -314,4 +314,4 @@ function Invoke-DriverManager {
     }
 }
 
-Export-ModuleMember -Function *
+

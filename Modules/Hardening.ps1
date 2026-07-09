@@ -104,4 +104,3 @@ function Invoke-HardeningMenu {
     }
 }
 
-Export-ModuleMember -Function *

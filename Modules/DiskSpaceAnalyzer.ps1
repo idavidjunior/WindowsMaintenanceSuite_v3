@@ -791,4 +791,4 @@ function Invoke-DiskSpaceAnalyzer {
     Write-Log "Analisador de espaco concluido. Disco C: com $totalDisk GB livres." "INFO"
 }
 
-Export-ModuleMember -Function *
+
