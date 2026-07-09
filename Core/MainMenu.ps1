@@ -36,7 +36,8 @@ $moduleFiles = @(
     'EssentialMaintenance.ps1','UltimateMaintenance.ps1','DeepDiagnostics.ps1','SmartDiagnostics.ps1',
     'RegistryBackupRestore.ps1','SystemTweaks.ps1','PerformanceMonitor.ps1','DeepCleaning.ps1',
     'SystemLightweight.ps1','DriverManager.ps1','SecurityScan.ps1','RegistryScanner.ps1',
-    'QuickTools.ps1','SelfUpdate.ps1','PackageManager.ps1','Profiles.ps1','Hardening.ps1'
+    'QuickTools.ps1','SelfUpdate.ps1','PackageManager.ps1','Profiles.ps1','Hardening.ps1',
+    'DiskSpaceAnalyzer.ps1'
 )
 foreach ($mod in $moduleFiles) {
     Import-Module (Join-Path $modRoot $mod) -Force -DisableNameChecking
@@ -97,11 +98,12 @@ function Show-MainMenu {
         Write-Host " 13. Verificacao de Virus (Windows Defender)"
         Write-Host " 14. Varredura e Limpeza do Registro"
         Write-Host " 15. Ferramentas Nativas do Windows (defrag, servicos, MRT, etc.)"
-        Write-Host " 16. Atualizacao Automatica (Self-Update)"
-        Write-Host " 17. Gerenciador de Pacotes (WinGet/Choco/Scoop)"
-        Write-Host " 18. Perfis de Otimizacao (Gamer/Dev/Server/Battery)"
-        Write-Host " 19. Hardening de Seguranca (Baseline/Strict)"
-        Write-Host " 20. Sair"
+        Write-Host " 16. Analisador de Espaco em Disco"
+        Write-Host " 17. Atualizacao Automatica (Self-Update)"
+        Write-Host " 18. Gerenciador de Pacotes (WinGet/Choco/Scoop)"
+        Write-Host " 19. Perfis de Otimizacao (Gamer/Dev/Server/Battery)"
+        Write-Host " 20. Hardening de Seguranca (Baseline/Strict)"
+        Write-Host " 21. Sair"
         Write-Host "`n========================================" -ForegroundColor Green
 
         $choice = Read-Host "Digite o numero da sua escolha"
@@ -110,10 +112,10 @@ function Show-MainMenu {
         $choice = $choice -replace '\s+', ''
 
         # Validar input
-        $isValid = Test-ValidNumericInput -Value $choice -Min 1 -Max 20
+        $isValid = Test-ValidNumericInput -Value $choice -Min 1 -Max 21
 
         if (-not $isValid) {
-            Write-Host "Opção inválida. Por favor, digite um numero entre 1 e 20." -ForegroundColor Red
+            Write-Host "Opção inválida. Por favor, digite um numero entre 1 e 21." -ForegroundColor Red
             Start-Sleep -Seconds 2
             continue
         }
@@ -214,26 +216,31 @@ function Show-MainMenu {
                 Wait-KeyPress
             }
             "16" {
+                Write-Log "Iniciando Analisador de Espaco em Disco."
+                Invoke-DiskSpaceAnalyzer
+                Wait-KeyPress
+            }
+            "17" {
                 Write-Log "Iniciando Auto-Atualizacao."
                 Update-WMS
                 Wait-KeyPress
             }
-            "17" {
+            "18" {
                 Write-Log "Abrindo Gerenciador de Pacotes."
                 Invoke-PackageManagerMenu
                 Wait-KeyPress
             }
-            "18" {
+            "19" {
                 Write-Log "Aplicando Perfil de Otimizacao."
                 Invoke-ProfileMenu
                 Wait-KeyPress
             }
-            "19" {
+            "20" {
                 Write-Log "Executando Hardening de Seguranca."
                 Invoke-HardeningMenu
                 Wait-KeyPress
             }
-            "20" {
+            "21" {
                 Write-Log "Saindo do Windows Maintenance Suite."
                 return
             }
