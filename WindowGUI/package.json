@@ -21,8 +21,7 @@
     "portable": {
       "artifactName": "WindowsMaintenanceSuite.exe"
     },
-    "asar": true,
-    "asarUnpack": ["gui-run.ps1"],
+    "asar": false,
     "files": [
       "**/*",
       "!node_modules/**"

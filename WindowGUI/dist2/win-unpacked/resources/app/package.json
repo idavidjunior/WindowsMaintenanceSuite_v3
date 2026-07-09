@@ -1,0 +1,6 @@
+{
+  "name": "windows-maintenance-suite",
+  "version": "1.0.0",
+  "description": "Windows Maintenance Suite - Interface Visual",
+  "main": "main.js"
+}

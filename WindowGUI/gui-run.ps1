@@ -3,6 +3,7 @@ param([int]$Option)
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $candidates = @(
     (Resolve-Path "$scriptRoot\.." -ErrorAction SilentlyContinue),
+    (Resolve-Path "$scriptRoot\..\app" -ErrorAction SilentlyContinue),
     (Resolve-Path "$scriptRoot\..\.." -ErrorAction SilentlyContinue)
 )
 $projectRoot = $null
