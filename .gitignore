@@ -9,6 +9,7 @@ Reports/
 # Runtime
 node_modules/
 dist/
+dist2/
 
 # Test scripts
 FixEncoding.ps1
