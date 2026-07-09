@@ -93,6 +93,7 @@ function Get-RedundantPrograms {
                 $size = $prog.EstimatedSize
                 $installDir = $prog.InstallLocation
                 $publisher = $prog.Publisher
+                $version = $prog.DisplayVersion
                 $all += [PSCustomObject]@{
                     Name = $name
                     Normalized = Normalize-ProgramName $name
@@ -100,6 +101,7 @@ function Get-RedundantPrograms {
                     ProductCode = $prodCode
                     UninstallString = $uninstallStr
                     SizeMB = if ($size) { [Math]::Round($size, 0) } else { 0 }
+                    DisplayVersion = $version
                     InstallDir = $installDir
                 }
             }
@@ -118,6 +120,7 @@ function Get-RedundantPrograms {
                     ProductCode = $item.ProductCode
                     UninstallString = $item.UninstallString
                     SizeMB = $item.SizeMB
+                    DisplayVersion = $item.DisplayVersion
                     InstallDir = $item.InstallDir
                 }
             }
@@ -166,6 +169,7 @@ function Get-RedundantPrograms {
                         ProductCode = $m.ProductCode
                         UninstallString = $m.UninstallString
                         SizeMB = $m.SizeMB
+                        DisplayVersion = $m.DisplayVersion
                         InstallDir = $m.InstallDir
                     }
                 }
@@ -208,18 +212,25 @@ function Invoke-DuplicateCleaner {
         Write-Host "  [$($g.Count) ocorrencias] $($g.Name)" -ForegroundColor Cyan
         foreach ($item in $g.Group) {
             $sizeTag = if ($item.SizeMB -gt 0) { " ($($item.SizeMB) MB)" } else { "" }
-            Write-Host "    $index. $($item.Name)$sizeTag" -ForegroundColor White
+            $verTag = if ($item.DisplayVersion) { " [v$($item.DisplayVersion)]" } else { "" }
+            Write-Host "    $index. $($item.Name)$verTag$sizeTag" -ForegroundColor White
             $flatList += $item
             $index++
         }
         Write-Host ""
     }
 
+    Write-Host "  a. Desinstalar automaticamente (mantem apenas o mais recente de cada grupo)"
     Write-Host "  d. Desinstalar programas especificos (digite os numeros)"
     Write-Host "  v. Voltar ao menu anterior"
-    $choice = Read-Host "`nDigite os numeros separados por virgula (ex: 1,3,5) ou 'd' para selecao guiada"
+    $choice = Read-Host "`nDigite os numeros (ex: 1,3,5) ou a/d/v"
 
     if ($choice -eq 'v' -or $choice -eq 'V') { return }
+
+    if ($choice -eq 'a' -or $choice -eq 'A') {
+        Invoke-AutoCleanDuplicates -Groups $groups
+        return
+    }
 
     if ($choice -eq 'd' -or $choice -eq 'D') {
         $selected = @()
@@ -262,7 +273,135 @@ function Invoke-DuplicateCleaner {
         return
     }
 
-    foreach ($s in $selected) {
+    Uninstall-ProgramList -Items $selected
+    Write-Host "`nProcesso de desinstalacao concluido." -ForegroundColor Green
+}
+
+function Get-VersionScore {
+    param([string]$Version)
+    if (-not $Version) { return @(0,0,0,0) }
+    try {
+        $v = [Version]$Version
+        return @($v.Major, $v.Minor, $v.Build, $v.Revision)
+    } catch {
+        $parts = ($Version -replace '[^\d.]', '') -split '\.'
+        $nums = @(0,0,0,0)
+        for ($i = 0; $i -lt [Math]::Min($parts.Count, 4); $i++) {
+            $n = 0; [int]::TryParse($parts[$i], [ref]$n) | Out-Null; $nums[$i] = $n
+        }
+        return $nums
+    }
+}
+
+function Compare-VersionScores {
+    param([int[]]$A, [int[]]$B)
+    for ($i = 0; $i -lt 4; $i++) {
+        $va = if ($i -lt $A.Length) { $A[$i] } else { 0 }
+        $vb = if ($i -lt $B.Length) { $B[$i] } else { 0 }
+        if ($va -gt $vb) { return 1 }
+        if ($va -lt $vb) { return -1 }
+    }
+    return 0
+}
+
+function Test-SideBySideGroup {
+    param([string]$GroupName)
+    $sideBySidePatterns = @(
+        '(?i)visual\s*c\+\+'
+    )
+    foreach ($p in $sideBySidePatterns) {
+        if ($GroupName -match $p) { return $true }
+    }
+    return $false
+}
+
+function Invoke-AutoCleanDuplicates {
+    param($Groups)
+
+    Write-Host "`n========================================" -ForegroundColor Magenta
+    Write-Host "  ANALISE AUTOMATICA DE DUPLICADOS" -ForegroundColor Magenta
+    Write-Host "========================================" -ForegroundColor Magenta
+
+    $toRemove = @()
+    $kept = @()
+    $skipped = @()
+
+    foreach ($g in $Groups) {
+        $items = $g.Group | Sort-Object { [int]($_ | Get-Member -Name SizeMB -ErrorAction SilentlyContinue) }
+        if ($items.Count -lt 2) { continue }
+
+        if (Test-SideBySideGroup -GroupName $g.Name) {
+            $differentMajor = @{}
+            foreach ($item in $items) {
+                $score = Get-VersionScore $item.DisplayVersion
+                $key = "$($score[0]).$($score[1])"
+                $differentMajor[$key] = $true
+            }
+            if ($differentMajor.Keys.Count -ge 2) {
+                $skipped += $g.Name
+                continue
+            }
+        }
+
+        $best = $null
+        $bestScore = $null
+        foreach ($item in $items) {
+            $score = Get-VersionScore $item.DisplayVersion
+            if (-not $best -or (Compare-VersionScores $score $bestScore) -gt 0) {
+                $best = $item
+                $bestScore = $score
+            }
+        }
+        if (-not $best) { $best = $items[0] }
+
+        $kept += $best
+        foreach ($item in $items) {
+            if ($item.ProductCode -ne $best.ProductCode) {
+                $toRemove += $item
+            }
+        }
+    }
+
+    if ($toRemove.Count -eq 0) {
+        Write-Host "`nNenhum item redundante para remover apos analise." -ForegroundColor Green
+        return
+    }
+
+    if ($skipped.Count -gt 0) {
+        Write-Host "`nGrupos ignorados (versoes side-by-side mantidas):" -ForegroundColor Cyan
+        foreach ($s in $skipped) {
+            Write-Host "  - $s" -ForegroundColor Gray
+        }
+    }
+
+    Write-Host "`nItens que SERAO MANTIDOS (1 por grupo):" -ForegroundColor Green
+    foreach ($k in $kept) {
+        $ver = if ($k.DisplayVersion) { " v$($k.DisplayVersion)" } else { "" }
+        Write-Host "  [KEEP] $($k.Name)$ver" -ForegroundColor Green
+    }
+
+    Write-Host "`nItens que SERAO REMOVIDOS:" -ForegroundColor Red
+    $totalMB = 0
+    foreach ($r in $toRemove) {
+        $ver = if ($r.DisplayVersion) { " v$($r.DisplayVersion)" } else { "" }
+        Write-Host "  [DEL]  $($r.Name)$ver ($($r.SizeMB) MB)" -ForegroundColor Yellow
+        $totalMB += $r.SizeMB
+    }
+    Write-Host "`nTotal estimado a liberar: $totalMB MB" -ForegroundColor White
+
+    $confirm = Read-Host "`nDeseja desinstalar TODOS estes programas? (S/N)"
+    if ($confirm -ne 'S' -and $confirm -ne 's') {
+        Write-Host "Operacao cancelada." -ForegroundColor Cyan
+        return
+    }
+
+    Uninstall-ProgramList -Items $toRemove
+    Write-Host "`nLimpeza automatica de duplicados concluida." -ForegroundColor Green
+}
+
+function Uninstall-ProgramList {
+    param($Items)
+    foreach ($s in $Items) {
         Write-Host "`n[>] Desinstalando: $($s.Name)..." -ForegroundColor Yellow
         try {
             $uninst = $s.UninstallString
@@ -291,8 +430,6 @@ function Invoke-DuplicateCleaner {
             Write-Log "Erro ao desinstalar $($s.Name): $_" "ERROR"
         }
     }
-
-    Write-Host "`nProcesso de desinstalacao concluido." -ForegroundColor Green
 }
 
 function Invoke-DiskSpaceAnalyzer {
