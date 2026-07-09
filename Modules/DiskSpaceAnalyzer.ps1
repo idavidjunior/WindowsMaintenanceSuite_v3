@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    Módulo de Análise de Espaço em Disco.
+    Módulo de Análise de Espaço em Disco e Programas Redundantes.
 .DESCRIPTION
-    Examina o sistema e lista os programas e diretórios que mais consomem
-    espaço no disco, auxiliando na identificação de grandes consumidores.
+    Examina o sistema, lista os programas/diretórios que mais consomem
+    espaço e identifica programas duplicados ou redundantes para remoção.
 #>
 
 . "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)\..\Core\Logger.ps1"
@@ -67,6 +67,234 @@ function Get-TopFolderSizes {
     }
 }
 
+function Normalize-ProgramName {
+    param([string]$Name)
+    $n = $Name -replace '(?i)\s*(x64|x86|64-bit|32-bit)\s*', ''
+    $n = $n -replace '(?i)\s*-\s*(Release|Update|Version|v|ver)\s*[\d.]+', ''
+    $n = $n -replace '\s+', ' '
+    return $n.Trim()
+}
+
+function Get-RedundantPrograms {
+    Write-Host "`n[>] Examinando programas duplicados/redundantes..." -ForegroundColor Yellow
+    $all = @()
+    $regPaths = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
+    )
+    foreach ($regPath in $regPaths) {
+        if (Test-Path $regPath) {
+            $programs = Get-ItemProperty $regPath -ErrorAction SilentlyContinue
+            foreach ($prog in $programs) {
+                $name = $prog.DisplayName
+                if (-not $name) { continue }
+                $prodCode = $prog.PSChildName
+                $uninstallStr = $prog.UninstallString
+                $size = $prog.EstimatedSize
+                $installDir = $prog.InstallLocation
+                $publisher = $prog.Publisher
+                $all += [PSCustomObject]@{
+                    Name = $name
+                    Normalized = Normalize-ProgramName $name
+                    Publisher = $publisher
+                    ProductCode = $prodCode
+                    UninstallString = $uninstallStr
+                    SizeMB = if ($size) { [Math]::Round($size, 0) } else { 0 }
+                    InstallDir = $installDir
+                }
+            }
+        }
+    }
+
+    $redundant = @()
+    $groups = $all | Group-Object Normalized
+    foreach ($g in $groups) {
+        if ($g.Count -ge 2) {
+            foreach ($item in $g.Group) {
+                $redundant += [PSCustomObject]@{
+                    GroupName = $g.Name
+                    Name = $item.Name
+                    Publisher = $item.Publisher
+                    ProductCode = $item.ProductCode
+                    UninstallString = $item.UninstallString
+                    SizeMB = $item.SizeMB
+                    InstallDir = $item.InstallDir
+                }
+            }
+        }
+    }
+
+    $knownPrefixes = @(
+        'Microsoft Visual C\+\+',
+        'Microsoft .NET',
+        'Java',
+        'Adobe AIR',
+        'Adobe Flash',
+        'Microsoft Silverlight',
+        'Microsoft Office',
+        'Microsoft Teams',
+        'Skype',
+        'Google Chrome',
+        'Mozilla Firefox',
+        'Mozilla Thunderbird',
+        'Notepad\+\+',
+        '7-Zip',
+        'WinRAR',
+        'WinZip',
+        'Microsoft Edge',
+        'Microsoft OneDrive',
+        'Microsoft OneNote',
+        'Microsoft Outlook',
+        'Microsoft PowerPoint',
+        'Microsoft Word',
+        'Microsoft Excel',
+        'Microsoft Access',
+        'Microsoft Publisher'
+    )
+
+    $knownDups = @()
+    foreach ($prefix in $knownPrefixes) {
+        $matches = $all | Where-Object { $_.Name -match $prefix }
+        if ($matches.Count -ge 2) {
+            foreach ($m in $matches) {
+                $found = $redundant | Where-Object { $_.ProductCode -eq $m.ProductCode }
+                if (-not $found) {
+                    $knownDups += [PSCustomObject]@{
+                        GroupName = $prefix -replace '\\', ''
+                        Name = $m.Name
+                        Publisher = $m.Publisher
+                        ProductCode = $m.ProductCode
+                        UninstallString = $m.UninstallString
+                        SizeMB = $m.SizeMB
+                        InstallDir = $m.InstallDir
+                    }
+                }
+            }
+        }
+    }
+
+    $merged = @()
+    $seen = @{}
+    foreach ($item in ($redundant + $knownDups)) {
+        if (-not $seen.ContainsKey($item.ProductCode)) {
+            $seen[$item.ProductCode] = $true
+            $merged += $item
+        }
+    }
+
+    return $merged | Sort-Object GroupName, Name
+}
+
+function Invoke-DuplicateCleaner {
+    Write-Host "========================================" -ForegroundColor Magenta
+    Write-Host "  PROGRAMAS DUPLICADOS / REDUNDANTES" -ForegroundColor Magenta
+    Write-Host "========================================" -ForegroundColor Magenta
+
+    $dups = Get-RedundantPrograms
+    $groups = $dups | Group-Object GroupName
+
+    if ($groups.Count -eq 0) {
+        Write-Host "`nNenhum programa duplicado ou redundante encontrado." -ForegroundColor Green
+        Write-Log "Varredura de duplicados: nenhum encontrado." "INFO"
+        return
+    }
+
+    $index = 1
+    $flatList = @()
+
+    Write-Host "`nGrupos de programas potencialmente redundantes:" -ForegroundColor Yellow
+    Write-Host ""
+    foreach ($g in $groups) {
+        Write-Host "  [$($g.Count) ocorrencias] $($g.Name)" -ForegroundColor Cyan
+        foreach ($item in $g.Group) {
+            $sizeTag = if ($item.SizeMB -gt 0) { " ($($item.SizeMB) MB)" } else { "" }
+            Write-Host "    $index. $($item.Name)$sizeTag" -ForegroundColor White
+            $flatList += $item
+            $index++
+        }
+        Write-Host ""
+    }
+
+    Write-Host "  d. Desinstalar programas especificos (digite os numeros)"
+    Write-Host "  v. Voltar ao menu anterior"
+    $choice = Read-Host "`nDigite os numeros separados por virgula (ex: 1,3,5) ou 'd' para selecao guiada"
+
+    if ($choice -eq 'v' -or $choice -eq 'V') { return }
+
+    if ($choice -eq 'd' -or $choice -eq 'D') {
+        $selected = @()
+        $input = Read-Host "Digite os numeros dos programas a desinstalar (separados por virgula)"
+        $nums = $input -split ',' | ForEach-Object { $_.Trim() }
+        foreach ($n in $nums) {
+            if ($n -match '^\d+$') {
+                $idx = [int]$n
+                if ($idx -ge 1 -and $idx -le $flatList.Count) {
+                    $selected += $flatList[$idx - 1]
+                }
+            }
+        }
+    } else {
+        $selected = @()
+        $nums = $choice -split ',' | ForEach-Object { $_.Trim() }
+        foreach ($n in $nums) {
+            if ($n -match '^\d+$') {
+                $idx = [int]$n
+                if ($idx -ge 1 -and $idx -le $flatList.Count) {
+                    $selected += $flatList[$idx - 1]
+                }
+            }
+        }
+    }
+
+    if ($selected.Count -eq 0) {
+        Write-Host "Nenhum programa valido selecionado." -ForegroundColor Yellow
+        return
+    }
+
+    Write-Host "`nProgramas selecionados para desinstalacao:" -ForegroundColor Red
+    foreach ($s in $selected) {
+        Write-Host "  - $($s.Name) (Codigo: $($s.ProductCode))" -ForegroundColor Yellow
+    }
+
+    $confirm = Read-Host "`nTem certeza que deseja desinstalar ESTES programas? (S/N)"
+    if ($confirm -ne 'S' -and $confirm -ne 's') {
+        Write-Host "Operacao cancelada." -ForegroundColor Cyan
+        return
+    }
+
+    foreach ($s in $selected) {
+        Write-Host "`n[>] Desinstalando: $($s.Name)..." -ForegroundColor Yellow
+        try {
+            $uninst = $s.UninstallString
+            if ($uninst -and $uninst -match 'msiexec') {
+                $prodCode = $s.ProductCode
+                if ($prodCode -and $prodCode -match '^\{') {
+                    $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList "/x $prodCode /quiet /norestart" -Wait -PassThru -NoNewWindow
+                    if ($proc.ExitCode -eq 0) {
+                        Write-Host "      [OK] $($s.Name) desinstalado com sucesso." -ForegroundColor Green
+                        Write-Log "Desinstalado: $($s.Name)" "SUCCESS"
+                    } else {
+                        Write-Host "      [AVISO] Codigo de saida: $($proc.ExitCode). Pode ser necessario reboot." -ForegroundColor Yellow
+                        Write-Log "Desinstalacao de $($s.Name) retornou codigo $($proc.ExitCode)." "WARNING"
+                    }
+                }
+            } elseif ($uninst) {
+                $proc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $uninst /quiet /norestart" -Wait -PassThru -NoNewWindow
+                Write-Host "      [INFO] Comando de desinstalacao executado para $($s.Name)." -ForegroundColor Cyan
+                Write-Log "Desinstalacao iniciada: $($s.Name)" "INFO"
+            } else {
+                Write-Host "      [ERRO] Nenhum comando de desinstalacao encontrado para $($s.Name)." -ForegroundColor Red
+                Write-Log "Falha ao desinstalar $($s.Name): sem UninstallString." "ERROR"
+            }
+        } catch {
+            Write-Host "      [ERRO] Falha ao desinstalar $($s.Name): $(Get-SafeErrorMessage $_)" -ForegroundColor Red
+            Write-Log "Erro ao desinstalar $($s.Name): $_" "ERROR"
+        }
+    }
+
+    Write-Host "`nProcesso de desinstalacao concluido." -ForegroundColor Green
+}
+
 function Invoke-DiskSpaceAnalyzer {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "  ANALISADOR DE ESPACO EM DISCO" -ForegroundColor Cyan
@@ -76,22 +304,24 @@ function Invoke-DiskSpaceAnalyzer {
     Write-Host "  2. Pastas em C:\Program Files"
     Write-Host "  3. Pastas em C:\Program Files (x86)"
     Write-Host "  4. Pastas em C:\Users (perfis de usuario)"
-    Write-Host "  5. Analise Completa (todas as categorias acima)"
-    Write-Host "  6. Voltar ao Menu Principal"
+    Write-Host "  5. Programas Duplicados / Redundantes"
+    Write-Host "  6. Analise Completa (todas as anteriores)"
+    Write-Host "  7. Voltar ao Menu Principal"
     Write-Host "`n========================================" -ForegroundColor Cyan
 
     $choice = Read-Host "Digite o numero da sua escolha"
     $choice = $choice -replace '\s+', ''
 
-    if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max 6)) {
-        Write-Host "Opção inválida. Digite um numero entre 1 e 6." -ForegroundColor Red
+    if (-not (Test-ValidNumericInput -Value $choice -Min 1 -Max 7)) {
+        Write-Host "Opção inválida. Digite um numero entre 1 e 7." -ForegroundColor Red
         Start-Sleep -Seconds 2
         return
     }
 
-    if ($choice -eq "6") { return }
+    if ($choice -eq "7") { return }
+    if ($choice -eq "5") { Invoke-DuplicateCleaner; return }
 
-    $runAll = $choice -eq "5"
+    $runAll = $choice -eq "6"
 
     if ($runAll) {
         Write-Host "`n========================================" -ForegroundColor Magenta
@@ -185,6 +415,11 @@ function Invoke-DiskSpaceAnalyzer {
                 Write-Host ("  {0,-25} {1,12} MB" -f $u.Name, $u.SizeMB) -ForegroundColor $color
             }
         }
+    }
+
+    if ($runAll) {
+        Write-Host "`n[>] Incluindo varredura de programas duplicados..." -ForegroundColor Cyan
+        Invoke-DuplicateCleaner
     }
 
     $totalDisk = Get-DiskFreeGB
