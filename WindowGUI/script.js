@@ -80,3 +80,28 @@ btnExit.addEventListener('click', function() {
 setTimeout(checkApi, 500);
 setTimeout(checkAdmin, 800);
 setStatus('idle', 'Pronto. Selecione uma opção acima.');
+
+/* Tooltip customizado */
+const tooltip = document.getElementById('tooltip');
+let tooltipTimeout;
+
+document.addEventListener('mouseover', function(e) {
+  var btn = e.target.closest('[data-tip]');
+  if (!btn) { tooltip.classList.add('hidden'); return; }
+  clearTimeout(tooltipTimeout);
+  tooltipTimeout = setTimeout(function() {
+    tooltip.textContent = btn.getAttribute('data-tip');
+    var rect = btn.getBoundingClientRect();
+    var top = rect.top - tooltip.offsetHeight - 8;
+    tooltip.style.left = Math.max(4, Math.min(rect.left + rect.width / 2 - tooltip.offsetWidth / 2, window.innerWidth - tooltip.offsetWidth - 4)) + 'px';
+    tooltip.style.top = (top < 4 ? rect.bottom + 8 : top) + 'px';
+    tooltip.classList.remove('hidden');
+  }, 300);
+});
+
+document.addEventListener('mouseout', function(e) {
+  if (e.target.closest('[data-tip]')) {
+    clearTimeout(tooltipTimeout);
+    tooltip.classList.add('hidden');
+  }
+});

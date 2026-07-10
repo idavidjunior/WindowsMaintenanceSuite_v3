@@ -147,6 +147,15 @@ footer { display: flex; align-items: center; gap: 8px; padding: 8px 0 4px; flex-
 .btn-exit:hover { background: rgba(255,107,107,0.2); border-color: var(--danger); }
 .btn-exit:active { transform: scale(0.97); }
 
+.tooltip {
+  position: fixed; padding: 6px 12px; background: #1a1a2e; color: #64ffda;
+  border: 1px solid rgba(100,255,218,0.2); border-radius: 6px;
+  font-size: 12px; font-family: var(--font); line-height: 1.4;
+  pointer-events: none; z-index: 9999; white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4); transition: opacity 0.15s;
+}
+.tooltip.hidden { opacity: 0; }
+
 /* Responsive: single column on narrow windows */
 @media (max-width: 600px) {
   .container { padding: 10px 12px; }

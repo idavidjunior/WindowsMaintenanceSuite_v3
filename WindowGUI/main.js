@@ -35,7 +35,7 @@ function createWindow() {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
-    mainWindow.center();
+    mainWindow.maximize();
   });
 
   mainWindow.on('closed', () => { mainWindow = null; });
