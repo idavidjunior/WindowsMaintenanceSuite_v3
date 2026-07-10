@@ -82,26 +82,30 @@ setTimeout(checkAdmin, 800);
 setStatus('idle', 'Pronto. Selecione uma opção acima.');
 
 /* Tooltip customizado */
-const tooltip = document.getElementById('tooltip');
-let tooltipTimeout;
-
-document.addEventListener('mouseover', function(e) {
-  var btn = e.target.closest('[data-tip]');
-  if (!btn) { tooltip.classList.add('hidden'); return; }
-  clearTimeout(tooltipTimeout);
-  tooltipTimeout = setTimeout(function() {
-    tooltip.textContent = btn.getAttribute('data-tip');
-    var rect = btn.getBoundingClientRect();
-    var top = rect.top - tooltip.offsetHeight - 8;
-    tooltip.style.left = Math.max(4, Math.min(rect.left + rect.width / 2 - tooltip.offsetWidth / 2, window.innerWidth - tooltip.offsetWidth - 4)) + 'px';
-    tooltip.style.top = (top < 4 ? rect.bottom + 8 : top) + 'px';
-    tooltip.classList.remove('hidden');
-  }, 300);
-});
-
-document.addEventListener('mouseout', function(e) {
-  if (e.target.closest('[data-tip]')) {
-    clearTimeout(tooltipTimeout);
-    tooltip.classList.add('hidden');
-  }
-});
+(function() {
+  try {
+    var tip = document.getElementById('tooltip');
+    if (!tip) return;
+    document.querySelectorAll('[data-tip]').forEach(function(el) {
+      el.addEventListener('mouseenter', function() {
+        var txt = el.getAttribute('data-tip');
+        if (!txt) return;
+        tip.textContent = txt;
+        var r = el.getBoundingClientRect();
+        var tw = tip.offsetWidth;
+        var th = tip.offsetHeight;
+        var l = r.left + r.width / 2 - tw / 2;
+        if (l < 4) l = 4;
+        if (l + tw > window.innerWidth - 4) l = window.innerWidth - tw - 4;
+        var t = r.top - th - 8;
+        if (t < 4) t = r.bottom + 8;
+        tip.style.left = l + 'px';
+        tip.style.top = t + 'px';
+        tip.classList.remove('hidden');
+      });
+      el.addEventListener('mouseleave', function() {
+        tip.classList.add('hidden');
+      });
+    });
+  } catch(e) { console.error('Tooltip:', e); }
+})();

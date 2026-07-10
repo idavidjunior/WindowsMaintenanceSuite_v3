@@ -34,8 +34,8 @@ function createWindow() {
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
 
   mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
     mainWindow.maximize();
+    mainWindow.show();
   });
 
   mainWindow.on('closed', () => { mainWindow = null; });

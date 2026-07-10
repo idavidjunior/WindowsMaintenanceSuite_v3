@@ -151,8 +151,10 @@ footer { display: flex; align-items: center; gap: 8px; padding: 8px 0 4px; flex-
   position: fixed; padding: 6px 12px; background: #1a1a2e; color: #64ffda;
   border: 1px solid rgba(100,255,218,0.2); border-radius: 6px;
   font-size: 12px; font-family: var(--font); line-height: 1.4;
-  pointer-events: none; z-index: 9999; white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4); transition: opacity 0.15s;
+  pointer-events: none; z-index: 9999; max-width: 360px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  transition: opacity 0.12s ease;
 }
 .tooltip.hidden { opacity: 0; }
 
