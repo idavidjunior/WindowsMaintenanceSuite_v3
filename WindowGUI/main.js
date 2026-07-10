@@ -109,6 +109,18 @@ ipcMain.handle('run-option', async (event, optionNumber) => {
   });
 });
 
+ipcMain.handle('get-health-data', async () => {
+  const scriptPath = path.join(__dirname, 'get-health.ps1');
+  if (!fs.existsSync(scriptPath)) return null;
+  return new Promise((resolve) => {
+    exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}"`, { timeout: 10000, windowsHide: true },
+      (err, stdout) => {
+        if (err) { resolve(null); return; }
+        try { resolve(JSON.parse(stdout.trim())); } catch { resolve(null); }
+      });
+  });
+});
+
 ipcMain.on('quit-app', () => { app.quit(); });
 
 ipcMain.handle('open-interactive', async (event, optionNumber) => {

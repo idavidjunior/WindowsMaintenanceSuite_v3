@@ -109,3 +109,62 @@ setStatus('idle', 'Pronto. Selecione uma opção acima.');
     });
   } catch(e) { console.error('Tooltip:', e); }
 })();
+
+/* Health Monitor */
+(function() {
+  var cpuEl = document.getElementById('hmCpu');
+  var cpuVal = document.getElementById('hmCpuVal');
+  var ramEl = document.getElementById('hmRam');
+  var ramVal = document.getElementById('hmRamVal');
+  var diskEl = document.getElementById('hmDisk');
+  var diskVal = document.getElementById('hmDiskVal');
+  var uptimeEl = document.getElementById('hmUptime');
+  var scoreEl = document.getElementById('hmScore');
+  var fills = {};
+
+  function color(pct) {
+    if (pct < 50) return '#6bcb77';
+    if (pct < 75) return '#ffd93d';
+    if (pct < 90) return '#ff9f43';
+    return '#ff6b6b';
+  }
+
+  function update(data) {
+    [cpuEl, cpuVal, 'cpu'].forEach(function(v,i,a) {
+      if (i===0) { a[0].style.width = data.cpu + '%'; a[0].style.background = color(data.cpu); }
+      if (i===1) a[1].textContent = data.cpu + '%';
+    });
+    ramEl.style.width = data.ramPct + '%'; ramEl.style.background = color(data.ramPct);
+    ramVal.textContent = data.ramPct + '%';
+    diskEl.style.width = data.diskPct + '%'; diskEl.style.background = color(data.diskPct);
+    diskVal.textContent = data.diskPct + '%';
+    uptimeEl.textContent = data.uptimeHours + 'h';
+    scoreEl.textContent = data.score;
+    scoreEl.style.color = data.score >= 80 ? '#6bcb77' : data.score >= 50 ? '#ffd93d' : '#ff6b6b';
+  }
+
+  function fallback() {
+    cpuEl.style.width = '0%'; cpuEl.style.background = '#4a5568';
+    cpuVal.textContent = '--%';
+    ramEl.style.width = '0%'; ramEl.style.background = '#4a5568';
+    ramVal.textContent = '--%';
+    diskEl.style.width = '0%'; diskEl.style.background = '#4a5568';
+    diskVal.textContent = '--%';
+    uptimeEl.textContent = '--h';
+    scoreEl.textContent = '--';
+    scoreEl.style.color = '#4a5568';
+  }
+
+  function poll() {
+    if (window.api && window.api.getHealthData) {
+      window.api.getHealthData().then(function(d) { if (d) update(d); else fallback(); }).catch(fallback);
+    } else {
+      try {
+        fetch('/api/health').then(function(r) { return r.json(); }).then(function(d) { if (d) update(d); else fallback(); }).catch(fallback);
+      } catch(e) { fallback(); }
+    }
+  }
+
+  poll();
+  setInterval(poll, 5000);
+})();

@@ -12,7 +12,7 @@
     "appId": "com.wms.gui",
     "productName": "Windows Maintenance Suite",
     "directories": {
-      "output": "dist_v2"
+      "output": "dist_latest"
     },
     "win": {
       "target": ["portable"],
@@ -28,6 +28,7 @@
       "*.css",
       "*.json",
       "gui-run.ps1",
+      "get-health.ps1",
       "!node_modules/**"
     ],
     "extraResources": [
