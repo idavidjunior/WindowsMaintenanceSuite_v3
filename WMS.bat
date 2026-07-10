@@ -1,7 +1,7 @@
 @echo off
 :: Windows Maintenance Suite Launcher v3.0
 set "WMS_DIR=%~dp0"
-set "GUI_EXE=%WMS_DIR%WindowGUI\dist_latest\win-unpacked\Windows Maintenance Suite.exe"
+set "GUI_EXE=%WMS_DIR%WindowGUI\dist_v3\win-unpacked\Windows Maintenance Suite.exe"
 title Windows Maintenance Suite
 
 :: Auto-elevate to Administrator

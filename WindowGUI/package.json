@@ -12,7 +12,7 @@
     "appId": "com.wms.gui",
     "productName": "Windows Maintenance Suite",
     "directories": {
-      "output": "dist_latest"
+      "output": "dist_v3"
     },
     "win": {
       "target": ["portable"],
