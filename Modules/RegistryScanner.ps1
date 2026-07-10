@@ -236,13 +236,18 @@ function Get-RegistryScanCategories {
                 param($key)
                 $props = Get-ItemProperty -Path $key.PSPath -ErrorAction SilentlyContinue
                 if (-not $props) { return $false }
-                $dllPath = $null
-                if ($props.'(default)' -and $props.'(default)' -match '\.(dll|exe|ocx)$') { $dllPath = $props.'(default)' }
+                try {
+                    $inprocPath = (Get-ItemProperty -Path "$($key.PSPath)\InprocServer32" -ErrorAction SilentlyContinue).'(default)'
+                    if ($inprocPath -and (Test-PathCached -Path $inprocPath)) { return $false }
+                } catch {}
+                try {
+                    $localPath = (Get-ItemProperty -Path "$($key.PSPath)\LocalServer32" -ErrorAction SilentlyContinue).'(default)'
+                    if ($localPath -and (Test-PathCached -Path $localPath)) { return $false }
+                } catch {}
                 $inproc = $props.InprocServer32
-                if ($inproc -and (Test-Path $inproc -ErrorAction SilentlyContinue)) { return $false }
+                if ($inproc -and (Test-PathCached -Path $inproc)) { return $false }
                 $localserver = $props.LocalServer32
-                if ($localserver -and (Test-Path $localserver -ErrorAction SilentlyContinue)) { return $false }
-                if ($dllPath) { return (-not (Test-PathCached -Path $dllPath)) }
+                if ($localserver -and (Test-PathCached -Path $localserver)) { return $false }
                 return $false
             }
             RequiresBackup = $true
@@ -453,140 +458,98 @@ function Get-RegistryJunkReport {
     $categories = Get-RegistryScanCategories -RiskLevel $RiskLevel
     $findings = [System.Collections.Generic.List[Object]]::new()
     $totalCategories = $categories.Count
+    $catIdx = 0
 
-    $runspacePool = [runspacefactory]::CreateRunspacePool(1, (Get-RegistryScanConfig).MaxParallelism)
-    $runspacePool.Open()
-    $jobs = @()
-    $syncLock = [System.Threading.Mutex]::new()
+    foreach ($cat in $categories) {
+        $catIdx++
+        if (-not $Quiet) {
+            Write-Progress -Activity "Varredura do Registro" -Status "Processando: $($cat.Name)" -PercentComplete ([int]($catIdx * 100 / [Math]::Max(1, $totalCategories)))
+        }
 
-    for ($catIdx = 0; $catIdx -lt $totalCategories; $catIdx++) {
-        $cat = $categories[$catIdx]
-        $categoryIndex = $catIdx
-
-        $ps = [PowerShell]::Create()
-        $ps.RunspacePool = $runspacePool
-
-        $scriptBlock = {
-            param($Category, $CatIndex, $TotalCats, $CacheData, $Lock)
-            $localFindings = [System.Collections.Generic.List[Object]]::new()
-            $counted = 0
-
-            if ($Category.CustomScan) {
-                try {
-                    $results = & $Category.PreCheck
-                    foreach ($r in $results) {
-                        $localFindings.Add([PSCustomObject]@{
-                            Category  = $Category.Name
-                            Risk      = $Category.Risk
-                            KeyPath   = $r.KeyPath
-                            ValueName = $r.ValueName
-                            Detail    = $r.Detail
-                            SizeBytes = 0
-                        })
-                        $counted++
-                    }
-                } catch {}
-                return @{ Findings = $localFindings; Count = $counted; CatName = $Category.Name }
+        if ($cat.CustomScan -and $cat.PreCheck) {
+            try {
+                $results = & $cat.PreCheck
+                foreach ($r in $results) {
+                    $findings.Add([PSCustomObject]@{
+                        Category  = $cat.Name
+                        Risk      = $cat.Risk
+                        KeyPath   = $r.KeyPath
+                        ValueName = $r.ValueName
+                        Detail    = $r.Detail
+                        SizeBytes = 0
+                    })
+                }
+            } catch {
+                Write-Log "Erro no CustomScan '$($cat.Name)': $_" "WARNING"
             }
+            continue
+        }
 
-            foreach ($hivePath in $Category.Hives) {
-                if (-not (Test-Path $hivePath -ErrorAction SilentlyContinue)) { continue }
-                if ($CacheData.Excluded -and ($CacheData.Excluded | Where-Object { $hivePath -like $_ })) { continue }
+        foreach ($hivePath in $cat.Hives) {
+            if (-not (Test-Path $hivePath -ErrorAction SilentlyContinue)) { continue }
+            if (Test-ExcludedPath -Path $hivePath) { continue }
 
-                if ($Category.IsValueScan) {
-                    try {
-                        $props = Get-ItemProperty -Path $hivePath -ErrorAction SilentlyContinue
-                        if (-not $props) { continue }
-                        $valueNames = $props.PSObject.Properties | Where-Object { $_.Name -notlike "PS*" }
-                        foreach ($v in $valueNames) {
-                            $checkTarget = if ($Category.ValueNameIsPath) { $v.Name } else { $v.Value }
-                            if ([string]::IsNullOrWhiteSpace($checkTarget)) { continue }
-                            try {
-                                if (& $Category.Check $checkTarget) {
-                                    $size = if ($CacheData.MeasureSpace) { Get-RegistryValueSize -KeyPath $hivePath -ValueName $v.Name } else { 0 }
-                                    $localFindings.Add([PSCustomObject]@{
-                                        Category  = $Category.Name
-                                        Risk      = $Category.Risk
-                                        KeyPath   = $hivePath
-                                        ValueName = $v.Name
-                                        Detail    = $checkTarget
-                                        SizeBytes = $size
-                                    })
-                                    $counted++
-                                }
-                            } catch {}
+            if ($cat.IsValueScan) {
+                try {
+                    $props = Get-ItemProperty -Path $hivePath -ErrorAction SilentlyContinue
+                    if (-not $props) { continue }
+                    $valueNames = $props.PSObject.Properties | Where-Object { $_.Name -notlike "PS*" }
+                    foreach ($v in $valueNames) {
+                        $checkTarget = if ($cat.ValueNameIsPath) { $v.Name } else { $v.Value }
+                        if ([string]::IsNullOrWhiteSpace($checkTarget)) { continue }
+                        try {
+                            if (& $cat.Check $checkTarget) {
+                                $size = if ($MeasureSpace) { Get-RegistryValueSize -KeyPath $hivePath -ValueName $v.Name } else { 0 }
+                                $findings.Add([PSCustomObject]@{
+                                    Category  = $cat.Name
+                                    Risk      = $cat.Risk
+                                    KeyPath   = $hivePath
+                                    ValueName = $v.Name
+                                    Detail    = $checkTarget
+                                    SizeBytes = $size
+                                })
+                            }
+                        } catch {
+                            Write-Log "Erro ao verificar valor '$($cat.Name)': $_" "WARNING"
                         }
-                    } catch {}
-                } else {
-                    try {
-                        $subKeys = Get-ChildItem -Path $hivePath -ErrorAction SilentlyContinue
-                        foreach ($key in $subKeys) {
-                            $fullPath = $key.PSPath
-                            try {
-                                if (& $Category.Check $key) {
-                                    $psPath = $key.PSPath -replace '^Microsoft\.PowerShell\.Core\\Registry::', ''
-                                    if ($psPath -match '^HKEY_LOCAL_MACHINE') { $psPath = $psPath -replace '^HKEY_LOCAL_MACHINE', 'HKLM:' }
-                                    if ($psPath -match '^HKEY_CURRENT_USER') { $psPath = $psPath -replace '^HKEY_CURRENT_USER', 'HKCU:' }
-                                    if ($psPath -match '^HKEY_CLASSES_ROOT') { $psPath = $psPath -replace '^HKEY_CLASSES_ROOT', 'HKCR:' }
-                                    $size = if ($CacheData.MeasureSpace) { Get-RegistryKeySize -KeyPath $psPath } else { 0 }
-                                    $localFindings.Add([PSCustomObject]@{
-                                        Category  = $Category.Name
-                                        Risk      = $Category.Risk
-                                        KeyPath   = $psPath
-                                        ValueName = $null
-                                        Detail    = $key.PSChildName
-                                        SizeBytes = $size
-                                    })
-                                    $counted++
-                                }
-                            } catch {}
+                    }
+                } catch {
+                    Write-Log "Erro ao acessar valores '$($cat.Name)/$hivePath': $_" "WARNING"
+                }
+            } else {
+                try {
+                    $subKeys = Get-ChildItem -Path $hivePath -ErrorAction SilentlyContinue
+                    foreach ($key in $subKeys) {
+                        try {
+                            if (& $cat.Check $key) {
+                                $psPath = $key.PSPath -replace '^Microsoft\.PowerShell\.Core\\Registry::', ''
+                                if ($psPath -match '^HKEY_LOCAL_MACHINE') { $psPath = $psPath -replace '^HKEY_LOCAL_MACHINE', 'HKLM:' }
+                                if ($psPath -match '^HKEY_CURRENT_USER') { $psPath = $psPath -replace '^HKEY_CURRENT_USER', 'HKCU:' }
+                                if ($psPath -match '^HKEY_CLASSES_ROOT') { $psPath = $psPath -replace '^HKEY_CLASSES_ROOT', 'HKCR:' }
+                                $size = if ($MeasureSpace) { Get-RegistryKeySize -KeyPath $psPath } else { 0 }
+                                $findings.Add([PSCustomObject]@{
+                                    Category  = $cat.Name
+                                    Risk      = $cat.Risk
+                                    KeyPath   = $psPath
+                                    ValueName = $null
+                                    Detail    = $key.PSChildName
+                                    SizeBytes = $size
+                                })
+                            }
+                        } catch {
+                            Write-Log "Erro ao verificar subchave '$($cat.Name)': $_" "WARNING"
                         }
-                    } catch {}
+                    }
+                } catch {
+                    Write-Log "Erro ao listar subchaves '$($cat.Name)/$hivePath': $_" "WARNING"
                 }
             }
-            return @{ Findings = $localFindings; Count = $counted; CatName = $Category.Name }
-        }
-
-        $cacheData = @{
-            Excluded     = (Get-RegistryScanConfig).ExcludePaths
-            MeasureSpace = $MeasureSpace.IsPresent
-        }
-
-        [void]$ps.AddScript($scriptBlock).AddArgument($cat).AddArgument($categoryIndex).AddArgument($totalCategories).AddArgument($cacheData).AddArgument($syncLock)
-        $jobs += [PSCustomObject]@{
-            PowerShell = $ps
-            AsyncResult = $ps.BeginInvoke()
-            CategoryName = $cat.Name
-        }
-    }
-
-    $completedCategories = 0
-    foreach ($job in $jobs) {
-        try {
-            $result = $job.PowerShell.EndInvoke($job.AsyncResult)
-            $completedCategories++
-            if ($result -and $result.Findings) {
-                foreach ($f in $result.Findings) { $findings.Add($f) }
-            }
-            $pctScan = [Math]::Min(100, [int]($completedCategories * 100 / $totalCategories))
-            if (-not $Quiet) {
-                Write-Progress -Activity "Varredura do Registro" -Status "Processando: $($job.CategoryName)" -PercentComplete $pctScan
-            }
-        } catch {
-            if (-not $Quiet) {
-                Write-Host "  [AVISO] Categoria '$($job.CategoryName)' teve erro: $_" -ForegroundColor Yellow
-            }
-        } finally {
-            $job.PowerShell.Dispose()
         }
     }
 
     if (-not $Quiet) {
         Write-Progress -Activity "Varredura do Registro" -Completed
     }
-
-    $runspacePool.Close()
-    $runspacePool.Dispose()
 
     if (-not $Quiet) {
         $totalSize = ($findings | Measure-Object -Property SizeBytes -Sum).Sum
