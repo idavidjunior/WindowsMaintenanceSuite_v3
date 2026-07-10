@@ -141,6 +141,7 @@ function Get-RegistryScanCategories {
             Description = "Referências a DLLs que não existem mais no disco"
             Hives      = @("HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\SharedDLLs")
             IsValueScan = $true
+            ValueNameIsPath = $true
             Check = {
                 param($valuePath)
                 return (-not (Test-PathCached -Path $valuePath))
@@ -236,18 +237,22 @@ function Get-RegistryScanCategories {
                 param($key)
                 $props = Get-ItemProperty -Path $key.PSPath -ErrorAction SilentlyContinue
                 if (-not $props) { return $false }
+                $foundRef = $false
                 try {
-                    $inprocPath = (Get-ItemProperty -Path "$($key.PSPath)\InprocServer32" -ErrorAction SilentlyContinue).'(default)'
-                    if ($inprocPath -and (Test-PathCached -Path $inprocPath)) { return $false }
+                    $inprocDefault = (Get-ItemProperty -Path "$($key.PSPath)\InprocServer32" -ErrorAction SilentlyContinue).'(default)'
+                    if ($inprocDefault) {
+                        $foundRef = $true
+                        if (Test-PathCached -Path $inprocDefault) { return $false }
+                    }
                 } catch {}
                 try {
-                    $localPath = (Get-ItemProperty -Path "$($key.PSPath)\LocalServer32" -ErrorAction SilentlyContinue).'(default)'
-                    if ($localPath -and (Test-PathCached -Path $localPath)) { return $false }
+                    $localDefault = (Get-ItemProperty -Path "$($key.PSPath)\LocalServer32" -ErrorAction SilentlyContinue).'(default)'
+                    if ($localDefault) {
+                        $foundRef = $true
+                        if (Test-PathCached -Path $localDefault) { return $false }
+                    }
                 } catch {}
-                $inproc = $props.InprocServer32
-                if ($inproc -and (Test-PathCached -Path $inproc)) { return $false }
-                $localserver = $props.LocalServer32
-                if ($localserver -and (Test-PathCached -Path $localserver)) { return $false }
+                if ($foundRef) { return $true }
                 return $false
             }
             RequiresBackup = $true
@@ -403,15 +408,11 @@ function Get-RegistryScanCategories {
                 elseif ($imgPath -match '^\\??\\') { $imgPath = $imgPath.Substring(4) }
                 elseif ($imgPath -match '^"%SystemRoot%') { $imgPath = $imgPath -replace '%SystemRoot%', $env:SystemRoot }
                 $imgPath = $imgPath.Trim('"')
-                if ($imgPath -match '^[a-zA-Z]:\\') {
-                    return (-not (Test-PathCached -Path $imgPath))
-                }
                 $parts = $imgPath -split ' '
                 $exePath = $parts[0].Trim('"')
                 if ($exePath -match '^[a-zA-Z]:\\') {
                     return (-not (Test-PathCached -Path $exePath))
                 }
-                $sysPath = Join-Path $env:SystemRoot "System32" $exePath
                 if (Test-PathCached -Path "$env:SystemRoot\System32\$exePath") { return $false }
                 return $false
             }
