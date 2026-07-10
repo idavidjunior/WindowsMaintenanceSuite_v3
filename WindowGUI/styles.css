@@ -64,6 +64,7 @@ header h1 { font-size: 18px; font-weight: 600; color: var(--accent); letter-spac
 
 /* Card */
 .card {
+  display: flex; flex-direction: column;
   background: var(--card-bg); border: 1px solid var(--card-border);
   border-radius: var(--radius); backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px); overflow: hidden;
@@ -74,11 +75,15 @@ header h1 { font-size: 18px; font-weight: 600; color: var(--accent); letter-spac
 .card-header {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  flex-shrink: 0;
 }
 .card-icon { flex-shrink: 0; }
 .card-header h2 { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; }
 
-.card-body { padding: 6px 8px 8px; display: flex; flex-direction: column; gap: 4px; }
+.card-body {
+  padding: 6px 8px 8px; display: flex; flex-direction: column; gap: 4px;
+  overflow-y: auto; flex: 1; min-height: 0;
+}
 
 /* Buttons */
 .btn {

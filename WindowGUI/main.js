@@ -1,16 +1,24 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+﻿const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { exec, spawn } = require('child_process');
 const fs = require('fs');
 
 let mainWindow;
 
+function isAdmin() {
+  try {
+    const { execSync } = require('child_process');
+    execSync('net session', { stdio: 'ignore', timeout: 2000 });
+    return true;
+  } catch { return false; }
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 750,
-    height: 650,
+    width: 780,
+    height: 720,
     minWidth: 480,
-    minHeight: 400,
+    minHeight: 540,
     title: 'Windows Maintenance Suite',
     autoHideMenuBar: true,
     show: false,
@@ -40,34 +48,58 @@ app.on('activate', () => { if (mainWindow === null) createWindow(); });
 function getProjectRoot() {
   if (app.isPackaged) {
     const resourcesApp = path.join(process.resourcesPath, 'app');
-    if (fs.existsSync(resourcesApp)) return resourcesApp;
-    return path.dirname(app.getPath('exe'));
+    if (fs.existsSync(path.join(resourcesApp, 'Core'))) return resourcesApp;
+    const exeDir = path.dirname(app.getPath('exe'));
+    if (fs.existsSync(path.join(exeDir, 'Core'))) return exeDir;
+    if (fs.existsSync(path.join(exeDir, '..', 'Core'))) return path.resolve(exeDir, '..');
+    return resourcesApp;
   }
   return path.dirname(__dirname);
 }
 
 function getGuiRunPath() {
   if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'app', 'gui-run.ps1');
+    const inApp = path.join(process.resourcesPath, 'app', 'gui-run.ps1');
+    if (fs.existsSync(inApp)) return inApp;
+    const inCore = path.join(getProjectRoot(), 'WindowGUI', 'gui-run.ps1');
+    if (fs.existsSync(inCore)) return inCore;
+    return path.join(getProjectRoot(), 'gui-run.ps1');
   }
   return path.join(__dirname, 'gui-run.ps1');
 }
 
+function runInteractive(scriptPath, optionNumber, projectRoot) {
+  return new Promise((resolve) => {
+    const child = spawn('cmd.exe', [
+      '/c', 'start', '/wait', '',
+      'powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+      '-File', scriptPath, '-Option', String(optionNumber), '-KeepOpen'
+    ], { cwd: projectRoot, windowsHide: false, stdio: 'ignore' });
+    child.on('close', (code) => resolve(code));
+    child.on('error', () => resolve(-1));
+  });
+}
+
+ipcMain.handle('check-admin', () => isAdmin());
+
 ipcMain.handle('run-option', async (event, optionNumber) => {
   const scriptPath = getGuiRunPath();
+  if (!fs.existsSync(scriptPath)) {
+    return { code: -1, output: 'Script não encontrado: ' + scriptPath };
+  }
+  const projectRoot = getProjectRoot();
+  if (!fs.existsSync(path.join(projectRoot, 'Core'))) {
+    return { code: -1, output: 'Pasta Core não encontrada em: ' + projectRoot };
+  }
   const psCmd = `powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}" -Option ${optionNumber}`;
   const interactive = [2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 20].includes(optionNumber);
 
   return new Promise((resolve) => {
     if (interactive) {
-      const child = spawn('powershell.exe', [
-        '-NoProfile', '-ExecutionPolicy', 'Bypass',
-        '-File', scriptPath, '-Option', String(optionNumber)
-      ], { cwd: getProjectRoot(), windowsHide: false, stdio: 'inherit' });
-      child.on('close', (code) => resolve({ code, output: '' }));
-      child.on('error', (err) => resolve({ code: -1, output: 'Erro: ' + err.message }));
+      runInteractive(scriptPath, optionNumber, projectRoot)
+        .then((code) => resolve({ code, output: '' }));
     } else {
-      exec(psCmd, { cwd: getProjectRoot(), windowsHide: true, timeout: 300000, maxBuffer: 1024 * 1024 },
+      exec(psCmd, { cwd: projectRoot, windowsHide: true, timeout: 300000, maxBuffer: 1024 * 1024 },
         (error, stdout, stderr) => {
           const output = (stdout || '') + (stderr || '');
           const code = error ? (error.code || error.status || 1) : 0;
@@ -81,12 +113,8 @@ ipcMain.on('quit-app', () => { app.quit(); });
 
 ipcMain.handle('open-interactive', async (event, optionNumber) => {
   const scriptPath = getGuiRunPath();
-  const child = spawn('powershell.exe', [
-    '-NoProfile', '-ExecutionPolicy', 'Bypass',
-    '-File', scriptPath, '-Option', String(optionNumber)
-  ], { cwd: getProjectRoot(), windowsHide: false, stdio: 'inherit' });
-  return new Promise((resolve) => {
-    child.on('close', (code) => resolve(code));
-    child.on('error', () => resolve(-1));
-  });
+  if (!fs.existsSync(scriptPath)) {
+    return -1;
+  }
+  return runInteractive(scriptPath, optionNumber, getProjectRoot());
 });

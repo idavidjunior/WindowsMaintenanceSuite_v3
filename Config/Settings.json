@@ -7,5 +7,12 @@
     "Theme":  "Dark",
     "UseWinapp2":  false,
     "RegistryExclude":  [],
-    "ExportReportPath":  ""
+    "ExportReportPath":  "",
+    "RegistryScan": {
+        "MaxParallelism": 0,
+        "DefaultRiskLevel": "moderate",
+        "MeasureSpace": true,
+        "AutoBackup": true,
+        "GenerateHtmlReport": true
+    }
 }

@@ -12,7 +12,7 @@
     "appId": "com.wms.gui",
     "productName": "Windows Maintenance Suite",
     "directories": {
-      "output": "dist"
+      "output": "dist_v2"
     },
     "win": {
       "target": ["portable"],
@@ -23,7 +23,11 @@
     },
     "asar": false,
     "files": [
-      "**/*",
+      "*.js",
+      "*.html",
+      "*.css",
+      "*.json",
+      "gui-run.ps1",
       "!node_modules/**"
     ],
     "extraResources": [

@@ -10,6 +10,8 @@ Reports/
 node_modules/
 dist/
 dist2/
+dist_new/
+dist_v2/
 
 # Test scripts
 FixEncoding.ps1

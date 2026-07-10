@@ -1,17 +1,15 @@
 @echo off
 :: Windows Maintenance Suite Launcher
-:: Versão 1.0
+:: Versao 2.0 - GUI
 
 set "WMS_DIR=%~dp0"
-set "CORE_DIR=%WMS_DIR%Core"
+set "GUI_EXE=%WMS_DIR%WindowGUI\dist_v2\win-unpacked\Windows Maintenance Suite.exe"
 
 title Windows Maintenance Suite
 
-:: Verifica privilégios de Administrador
+:: Verifica privilegios de Administrador
 net session >nul 2>&1
-if %errorLevel% == 0 (
-    goto :run
-) else (
+if %errorLevel% NEQ 0 (
     echo.
     echo ######################################################
     echo # ERRO: ESTE SCRIPT REQUER PRIVILEGIOS DE ADMIN.     #
@@ -24,6 +22,6 @@ if %errorLevel% == 0 (
 )
 
 :run
-:: Abre uma janela dedicada de PowerShell (nao cmd) e fecha esta janela imediatamente
-start "Windows Maintenance Suite" powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%CORE_DIR%\MainMenu.ps1"
+:: Abre a interface grafica (Electron) e fecha esta janela
+start "" "%GUI_EXE%"
 exit /b

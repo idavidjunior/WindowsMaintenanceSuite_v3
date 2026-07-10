@@ -1,4 +1,4 @@
-param([int]$Option)
+﻿param([int]$Option, [switch]$KeepOpen)
 
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $candidates = @(
@@ -15,7 +15,7 @@ if (-not $projectRoot) { $projectRoot = Resolve-Path "$scriptRoot\.." }
 $corePath = Join-Path $projectRoot "Core"
 $modPath = Join-Path $projectRoot "Modules"
 
-@('Logger.ps1','ConfigManager.ps1','SecurityHelper.ps1','Scheduler.ps1') | ForEach-Object {
+@('Logger.ps1','ConfigManager.ps1','HealthEngine.ps1','SecurityHelper.ps1','Scheduler.ps1') | ForEach-Object {
     Import-Module (Join-Path $corePath $_) -Force -DisableNameChecking
 }
 
@@ -60,8 +60,16 @@ try {
         19 { Invoke-ProfileMenu }
         20 { Invoke-HardeningMenu }
     }
-    Write-Host "[WMS-OK] Opcao $Option concluida."
+    Write-Host "[WMS-OK] Opção $Option concluída."
 } catch {
     Write-Host "[WMS-ERRO] $($_.Exception.Message)"
     exit 1
+}
+
+if ($KeepOpen) {
+    Write-Host "`n========================================" -ForegroundColor Green
+    Write-Host "  Tarefa concluída. Pressione qualquer" -ForegroundColor Green
+    Write-Host "  tecla para fechar esta janela..." -ForegroundColor Green
+    Write-Host "========================================"
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }
