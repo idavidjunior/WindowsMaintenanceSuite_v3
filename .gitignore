@@ -12,6 +12,7 @@ dist/
 dist2/
 dist_new/
 dist_v2/
+dist_build/
 
 # Test scripts
 FixEncoding.ps1

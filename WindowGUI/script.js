@@ -44,14 +44,11 @@ function checkApi() {
   return ok;
 }
 
-var currentTaskOpt = null;
-
 async function runOption(opt) {
   if (!checkApi()) {
     alert('[WMS] API não conectada. O Electron não expõe o window.api corretamente.\nExecute via "npm start" ou use o win-unpacked compilado.');
     return;
   }
-  currentTaskOpt = opt;
   const name = optionNames[opt] || 'Opção ' + opt;
   setStatus('running', 'Executando: ' + name + '...');
 
@@ -69,18 +66,6 @@ async function runOption(opt) {
   } catch (err) {
     setStatus('error', 'Erro: ' + (err.message || err));
   }
-
-  showModal();
-}
-
-function showModal() {
-  var ov = document.getElementById('modalOverlay');
-  if (ov) ov.classList.remove('hidden');
-}
-
-function hideModal() {
-  var ov = document.getElementById('modalOverlay');
-  if (ov) ov.classList.add('hidden');
 }
 
 document.querySelectorAll('.btn[data-opt]').forEach(function(b) {
@@ -88,16 +73,6 @@ document.querySelectorAll('.btn[data-opt]').forEach(function(b) {
 });
 
 btnExit.addEventListener('click', function() {
-  if (window.api && window.api.quit) window.api.quit();
-  else window.close();
-});
-
-document.getElementById('modalContinue').addEventListener('click', function() {
-  hideModal();
-  setStatus('idle', 'Pronto. Selecione uma opção acima.');
-});
-
-document.getElementById('modalExit').addEventListener('click', function() {
   if (window.api && window.api.quit) window.api.quit();
   else window.close();
 });

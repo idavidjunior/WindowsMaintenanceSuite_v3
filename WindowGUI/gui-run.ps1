@@ -30,47 +30,57 @@ foreach ($mod in $modules) {
     Import-Module (Join-Path $modPath $mod) -Force -DisableNameChecking
 }
 
-try {
-    switch ($Option) {
-        1 { Invoke-EssentialMaintenance }
-        2 { Invoke-UltimateMaintenance }
-        3 { Invoke-DeepCleaning }
-        4 { Invoke-SystemLightweight }
-        5 { Invoke-DeepDiagnostics }
-        6 { Invoke-SmartDiagnostics }
-        7 { Invoke-PerformanceMonitor }
-        8 { Invoke-DriverManager }
-        9 { Invoke-SystemTweaks }
-        10 { Backup-Registry }
-        11 {
-            $backupPath = Get-SafeBackupPath
-            if (Test-Path $backupPath) {
-                $latest = Get-ChildItem -Path $backupPath -Filter "RegistryBackup_*.reg" -ErrorAction SilentlyContinue |
-                    Sort-Object LastWriteTime -Descending | Select-Object -First 1
-                if ($latest) { Restore-Registry -BackupFile $latest.FullName }
-            }
-        }
-        12 { Invoke-MaintenanceScheduler }
-        13 { Invoke-SecurityScan }
-        14 { Invoke-RegistryScan }
-        15 { Invoke-QuickToolsMenu }
-        16 { Invoke-DiskSpaceAnalyzer }
-        17 { Update-WMS }
-        18 { Invoke-PackageManagerMenu }
-        19 { Invoke-ProfileMenu }
-        20 { Invoke-HardeningMenu }
-        21 { Invoke-MemoryManager }
-    }
-    Write-Host "[WMS-OK] Opção $Option concluída."
-} catch {
-    Write-Host "[WMS-ERRO] $($_.Exception.Message)"
-    exit 1
-}
-
 if ($KeepOpen) {
-    Write-Host "`n========================================" -ForegroundColor Green
-    Write-Host "  Tarefa concluída. Pressione qualquer" -ForegroundColor Green
-    Write-Host "  tecla para fechar esta janela..." -ForegroundColor Green
-    Write-Host "========================================"
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    do {
+        try {
+            switch ($Option) {
+                1 { Invoke-EssentialMaintenance }
+                2 { Invoke-UltimateMaintenance }
+                3 { Invoke-DeepCleaning }
+                4 { Invoke-SystemLightweight }
+                5 { Invoke-DeepDiagnostics }
+                6 { Invoke-SmartDiagnostics }
+                7 { Invoke-PerformanceMonitor }
+                8 { Invoke-DriverManager }
+                9 { Invoke-SystemTweaks }
+                10 { Backup-Registry }
+                11 {
+                    $backupPath = Get-SafeBackupPath
+                    if (Test-Path $backupPath) {
+                        $latest = Get-ChildItem -Path $backupPath -Filter "RegistryBackup_*.reg" -ErrorAction SilentlyContinue |
+                            Sort-Object LastWriteTime -Descending | Select-Object -First 1
+                        if ($latest) { Restore-Registry -BackupFile $latest.FullName }
+                    }
+                }
+                12 { Invoke-MaintenanceScheduler }
+                13 { Invoke-SecurityScan }
+                14 { Invoke-RegistryScan }
+                15 { Invoke-QuickToolsMenu }
+                16 { Invoke-DiskSpaceAnalyzer }
+                17 { Update-WMS }
+                18 { Invoke-PackageManagerMenu }
+                19 { Invoke-ProfileMenu }
+                20 { Invoke-HardeningMenu }
+                21 { Invoke-MemoryManager }
+            }
+            Write-Host "[WMS-OK] Opção $Option concluída."
+        } catch {
+            Write-Host "[WMS-ERRO] $($_.Exception.Message)"
+        }
+
+        do {
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Write-Host "  Tarefa concluída!" -ForegroundColor Cyan
+            Write-Host "========================================" -ForegroundColor Cyan
+            Write-Host "  Deseja sair ou continuar?"
+            Write-Host "  1. Continuar (voltar ao menu)"
+            Write-Host "  2. Sair (fechar e voltar para a interface gráfica)"
+            Write-Host "========================================" -ForegroundColor Cyan
+            $keepChoice = Read-Host "Digite sua escolha"
+            $keepChoice = $keepChoice -replace '\s+', ''
+            if ($keepChoice -eq '1') { break }
+            if ($keepChoice -eq '2') { return }
+            Write-Host "Opção inválida. Digite 1 ou 2." -ForegroundColor Red
+        } while ($true)
+    } while ($true)
 }
