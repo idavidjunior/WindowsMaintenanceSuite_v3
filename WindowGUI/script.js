@@ -120,7 +120,10 @@ setStatus('idle', 'Pronto. Selecione uma opção acima.');
   var diskVal = document.getElementById('hmDiskVal');
   var uptimeEl = document.getElementById('hmUptime');
   var scoreEl = document.getElementById('hmScore');
-  var fills = {};
+  var ringEl = document.getElementById('hmRing');
+  var wrapEl = document.getElementById('hmScoreWrap');
+  var monEl = document.getElementById('healthMonitor');
+  var circ = 2 * Math.PI * 16;
 
   function color(pct) {
     if (pct < 50) return '#6bcb77';
@@ -129,18 +132,43 @@ setStatus('idle', 'Pronto. Selecione uma opção acima.');
     return '#ff6b6b';
   }
 
+  function scoreColor(s) {
+    if (s >= 80) return '#6bcb77';
+    if (s >= 50) return '#ffd93d';
+    return '#ff6b6b';
+  }
+
+  function setBar(el, valEl, pct) {
+    el.style.width = pct + '%';
+    el.style.background = color(pct);
+    valEl.textContent = pct + '%';
+  }
+
+  function setRing(score) {
+    var c = scoreColor(score);
+    var offset = circ * (1 - score / 100);
+    ringEl.style.stroke = c;
+    ringEl.style.strokeDasharray = circ;
+    ringEl.style.strokeDashoffset = offset;
+    scoreEl.textContent = score;
+    scoreEl.style.color = c;
+    wrapEl.style.color = c;
+  }
+
+  function setMonitorClass(score) {
+    monEl.classList.remove('good', 'warn', 'bad');
+    if (score >= 80) monEl.classList.add('good');
+    else if (score >= 50) monEl.classList.add('warn');
+    else monEl.classList.add('bad');
+  }
+
   function update(data) {
-    [cpuEl, cpuVal, 'cpu'].forEach(function(v,i,a) {
-      if (i===0) { a[0].style.width = data.cpu + '%'; a[0].style.background = color(data.cpu); }
-      if (i===1) a[1].textContent = data.cpu + '%';
-    });
-    ramEl.style.width = data.ramPct + '%'; ramEl.style.background = color(data.ramPct);
-    ramVal.textContent = data.ramPct + '%';
-    diskEl.style.width = data.diskPct + '%'; diskEl.style.background = color(data.diskPct);
-    diskVal.textContent = data.diskPct + '%';
+    setBar(cpuEl, cpuVal, data.cpu);
+    setBar(ramEl, ramVal, data.ramPct);
+    setBar(diskEl, diskVal, data.diskPct);
     uptimeEl.textContent = data.uptimeHours + 'h';
-    scoreEl.textContent = data.score;
-    scoreEl.style.color = data.score >= 80 ? '#6bcb77' : data.score >= 50 ? '#ffd93d' : '#ff6b6b';
+    setRing(data.score);
+    setMonitorClass(data.score);
   }
 
   function fallback() {
@@ -151,8 +179,12 @@ setStatus('idle', 'Pronto. Selecione uma opção acima.');
     diskEl.style.width = '0%'; diskEl.style.background = '#4a5568';
     diskVal.textContent = '--%';
     uptimeEl.textContent = '--h';
+    ringEl.style.stroke = '#4a5568';
+    ringEl.style.strokeDasharray = circ;
+    ringEl.style.strokeDashoffset = circ;
     scoreEl.textContent = '--';
     scoreEl.style.color = '#4a5568';
+    monEl.classList.remove('good', 'warn', 'bad');
   }
 
   function poll() {
@@ -165,6 +197,9 @@ setStatus('idle', 'Pronto. Selecione uma opção acima.');
     }
   }
 
+  // Init ring
+  ringEl.style.strokeDasharray = circ;
+  ringEl.style.strokeDashoffset = circ;
   poll();
   setInterval(poll, 5000);
 })();

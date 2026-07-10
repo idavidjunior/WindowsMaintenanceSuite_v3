@@ -90,28 +90,31 @@
     </div>
 
     <div class="health-monitor" id="healthMonitor">
-      <div class="hm-item">
+      <div class="hm-score" id="hmScoreWrap">
+        <svg class="hm-ring" viewBox="0 0 40 40">
+          <circle class="hm-ring-bg" cx="20" cy="20" r="16"/>
+          <circle class="hm-ring-fill" id="hmRing" cx="20" cy="20" r="16"/>
+        </svg>
+        <span class="hm-score-val" id="hmScore">--</span>
+      </div>
+      <div class="hm-metric">
         <span class="hm-label">CPU</span>
         <div class="hm-bar"><div class="hm-fill" id="hmCpu"></div></div>
         <span class="hm-value" id="hmCpuVal">--%</span>
       </div>
-      <div class="hm-item">
+      <div class="hm-metric">
         <span class="hm-label">RAM</span>
         <div class="hm-bar"><div class="hm-fill" id="hmRam"></div></div>
         <span class="hm-value" id="hmRamVal">--%</span>
       </div>
-      <div class="hm-item">
-        <span class="hm-label">Disco C:</span>
+      <div class="hm-metric">
+        <span class="hm-label">Disco</span>
         <div class="hm-bar"><div class="hm-fill" id="hmDisk"></div></div>
         <span class="hm-value" id="hmDiskVal">--%</span>
       </div>
-      <div class="hm-item hm-uptime">
+      <div class="hm-metric hm-uptime">
         <span class="hm-label">Ativo</span>
         <span class="hm-value" id="hmUptime">--h</span>
-      </div>
-      <div class="hm-item hm-uptime">
-        <span class="hm-label">Score</span>
-        <span class="hm-value" id="hmScore">--</span>
       </div>
     </div>
     <footer>

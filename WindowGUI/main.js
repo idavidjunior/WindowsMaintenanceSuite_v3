@@ -13,6 +13,19 @@ function isAdmin() {
   } catch { return false; }
 }
 
+// Auto-elevate to admin (packaged mode only — .bat already handles elevation)
+if (app.isPackaged && !isAdmin()) {
+  const exePath = app.getPath('exe');
+  try {
+    require('child_process').execSync(
+      `powershell -NoProfile -Command "Start-Process '${exePath}' -Verb RunAs -WindowStyle Hidden"`,
+      { timeout: 5000 }
+    );
+  } catch (e) {}
+  app.quit();
+  return;
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 780,
