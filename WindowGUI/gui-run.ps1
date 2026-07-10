@@ -24,7 +24,8 @@ $modules = @(
     'RegistryBackupRestore.ps1','SystemTweaks.ps1','PerformanceMonitor.ps1','DeepCleaning.ps1',
     'SystemLightweight.ps1','DriverManager.ps1','SecurityScan.ps1','RegistryScanner.ps1',
     'QuickTools.ps1','SelfUpdate.ps1','PackageManager.ps1','Profiles.ps1','Hardening.ps1',
-    'DiskSpaceAnalyzer.ps1'
+    'DiskSpaceAnalyzer.ps1',
+    'MemoryManager.ps1'
 )
 foreach ($mod in $modules) {
     Import-Module (Join-Path $modPath $mod) -Force -DisableNameChecking
