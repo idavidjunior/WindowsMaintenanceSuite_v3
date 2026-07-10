@@ -59,6 +59,7 @@ try {
         18 { Invoke-PackageManagerMenu }
         19 { Invoke-ProfileMenu }
         20 { Invoke-HardeningMenu }
+        21 { Invoke-MemoryManager }
     }
     Write-Host "[WMS-OK] Opção $Option concluída."
 } catch {

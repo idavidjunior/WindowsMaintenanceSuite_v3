@@ -4,7 +4,7 @@ const btnExit = document.getElementById('btnExit');
 const apiError = document.getElementById('apiError');
 const adminBanner = document.getElementById('adminBanner');
 
-const interactiveOptions = [2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 20];
+const interactiveOptions = [2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 20, 21];
 
 const optionNames = {
   1:'Manutenção Essencial',2:'Manutenção Completa',3:'Limpeza Profunda',
@@ -14,7 +14,7 @@ const optionNames = {
   13:'Verificação de Vírus',14:'Varredura e Limpeza do Registro',
   15:'Ferramentas Nativas do Windows',16:'Analisador de Espaço em Disco',
   17:'Auto-Atualização',18:'Gerenciador de Pacotes',19:'Perfis de Otimização',
-  20:'Hardening de Segurança',
+  20:'Hardening de Segurança',21:'Gerenciador de Memória RAM',
 };
 
 function setStatus(state, text) {
@@ -44,11 +44,14 @@ function checkApi() {
   return ok;
 }
 
+var currentTaskOpt = null;
+
 async function runOption(opt) {
   if (!checkApi()) {
     alert('[WMS] API não conectada. O Electron não expõe o window.api corretamente.\nExecute via "npm start" ou use o win-unpacked compilado.');
     return;
   }
+  currentTaskOpt = opt;
   const name = optionNames[opt] || 'Opção ' + opt;
   setStatus('running', 'Executando: ' + name + '...');
 
@@ -66,6 +69,18 @@ async function runOption(opt) {
   } catch (err) {
     setStatus('error', 'Erro: ' + (err.message || err));
   }
+
+  showModal();
+}
+
+function showModal() {
+  var ov = document.getElementById('modalOverlay');
+  if (ov) ov.classList.remove('hidden');
+}
+
+function hideModal() {
+  var ov = document.getElementById('modalOverlay');
+  if (ov) ov.classList.add('hidden');
 }
 
 document.querySelectorAll('.btn[data-opt]').forEach(function(b) {
@@ -73,6 +88,16 @@ document.querySelectorAll('.btn[data-opt]').forEach(function(b) {
 });
 
 btnExit.addEventListener('click', function() {
+  if (window.api && window.api.quit) window.api.quit();
+  else window.close();
+});
+
+document.getElementById('modalContinue').addEventListener('click', function() {
+  hideModal();
+  setStatus('idle', 'Pronto. Selecione uma opção acima.');
+});
+
+document.getElementById('modalExit').addEventListener('click', function() {
   if (window.api && window.api.quit) window.api.quit();
   else window.close();
 });
