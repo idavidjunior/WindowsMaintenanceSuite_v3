@@ -3,7 +3,7 @@
 :: Versao 2.0 - GUI
 
 set "WMS_DIR=%~dp0"
-set "GUI_EXE=%WMS_DIR%WindowGUI\dist_v2\win-unpacked\Windows Maintenance Suite.exe"
+set "GUI_EXE=%WMS_DIR%WindowGUI\dist_build\win-unpacked\Windows Maintenance Suite.exe"
 
 title Windows Maintenance Suite
 
