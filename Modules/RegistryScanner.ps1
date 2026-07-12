@@ -6,6 +6,18 @@
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
+# HKCR: nao e montado por padrao pelo PowerShell (so HKLM: e HKCU: sao). Sem
+# isso, toda checagem "HKCR:\CLSID\$clsid" falha silenciosamente e marca
+# CLSIDs validos como orfaos (falso positivo). Escopo Global para garantir
+# visibilidade independente de Import-Module vs dot-source.
+if (-not (Get-PSDrive -Name HKCR -ErrorAction SilentlyContinue)) {
+    try {
+        New-PSDrive -Name HKCR -PSProvider Registry -Root HKEY_CLASSES_ROOT -Scope Global -ErrorAction Stop | Out-Null
+    } catch {
+        Write-Host "  [AVISO] Nao foi possivel montar o drive HKCR: - categorias que dependem dele (Extensoes de Shell, Context Menu Handlers, Icon Overlay Handlers, CLSID/COM) podem gerar falsos positivos." -ForegroundColor Yellow
+    }
+}
+
 $script:RegistryScanConfig = $null
 $script:PathCache = @{}
 
@@ -366,7 +378,7 @@ function Get-RegistryScanCategories {
         @{
             Name       = "Context Menu Handlers Órfãos"
             Risk       = "Avançada"
-            Description = "Handlers de menu de contexto cujo CLSID não existe"
+            Description = "Handlers de menu de contexto cujo CLSID não existe ou está sem implementação"
             Hives      = @(
                 "HKLM:\SOFTWARE\Classes\*\shellex\ContextMenuHandlers",
                 "HKLM:\SOFTWARE\Classes\AllFileSystemObjects\shellex\ContextMenuHandlers",
@@ -377,20 +389,43 @@ function Get-RegistryScanCategories {
                 param($key)
                 $clsid = (Get-ItemProperty -Path $key.PSPath -ErrorAction SilentlyContinue).'(default)'
                 if (-not $clsid) { return $false }
-                return (-not (Test-PathCached -Path "HKCR:\CLSID\$clsid"))
+                $clsidPath = "HKCR:\CLSID\$clsid"
+                if (-not (Test-PathCached -Path $clsidPath)) { return $true }
+                # CLSID existe - só sinaliza se achou InprocServer32/LocalServer32 e o alvo sumiu
+                $foundRef = $false
+                try {
+                    $inproc = (Get-ItemProperty -Path "$clsidPath\InprocServer32" -ErrorAction SilentlyContinue).'(default)'
+                    if ($inproc) { $foundRef = $true; if (Test-PathCached -Path $inproc) { return $false } }
+                } catch {}
+                try {
+                    $local = (Get-ItemProperty -Path "$clsidPath\LocalServer32" -ErrorAction SilentlyContinue).'(default)'
+                    if ($local) { $foundRef = $true; if (Test-PathCached -Path $local) { return $false } }
+                } catch {}
+                return $foundRef
             }
         },
         @{
             Name       = "Icon Overlay Handlers Órfãos"
             Risk       = "Avançada"
-            Description = "Overlays de ícone do Explorer (Dropbox, Tortoise, etc.) cujo CLSID sumiu"
+            Description = "Overlays de ícone do Explorer (Dropbox, Tortoise, etc.) cujo CLSID sumiu ou está sem implementação"
             Hives      = @("HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers")
             RequiresBackup = $true
             Check = {
                 param($key)
                 $clsid = (Get-ItemProperty -Path $key.PSPath -ErrorAction SilentlyContinue).'(default)'
                 if (-not $clsid) { return $false }
-                return (-not (Test-PathCached -Path "HKCR:\CLSID\$clsid"))
+                $clsidPath = "HKCR:\CLSID\$clsid"
+                if (-not (Test-PathCached -Path $clsidPath)) { return $true }
+                $foundRef = $false
+                try {
+                    $inproc = (Get-ItemProperty -Path "$clsidPath\InprocServer32" -ErrorAction SilentlyContinue).'(default)'
+                    if ($inproc) { $foundRef = $true; if (Test-PathCached -Path $inproc) { return $false } }
+                } catch {}
+                try {
+                    $local = (Get-ItemProperty -Path "$clsidPath\LocalServer32" -ErrorAction SilentlyContinue).'(default)'
+                    if ($local) { $foundRef = $true; if (Test-PathCached -Path $local) { return $false } }
+                } catch {}
+                return $foundRef
             }
         },
         @{
