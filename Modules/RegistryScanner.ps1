@@ -401,8 +401,24 @@ function Get-RegistryScanCategories {
             RequiresBackup = $true
             Check = {
                 param($key)
+                # Lista de bloqueio: nomes/prefixos de servicos que NUNCA sao
+                # sinalizados, mesmo que o ImagePath pareca ausente (ex: disco
+                # de rede offline no momento do scan). Excluir servico de
+                # sistema por engano pode impedir o boot.
+                $protectedPrefixes = @(
+                    'Base', 'wmi', 'RpcSs', 'RpcEptMapper', 'DcomLaunch', 'Power',
+                    'PlugPlay', 'Winmgmt', 'Dnscache', 'Dhcp', 'EventLog', 'LSM',
+                    'Netlogon', 'Ntfs', 'volsnap', 'volmgr', 'partmgr', 'disk',
+                    'storahci', 'stornvme', 'ACPI', 'pci', 'ndis', 'tcpip', 'afd',
+                    'BFE', 'MpsSvc', 'WinDefend', 'Sense', 'CryptSvc', 'gpsvc',
+                    'ProfSvc', 'SamSs', 'Schedule', 'Themes', 'UxSms', 'Wcmsvc'
+                )
+                foreach ($p in $protectedPrefixes) {
+                    if ($key.PSChildName -like "$p*") { return $false }
+                }
                 $props = Get-ItemProperty -Path $key.PSPath -ErrorAction SilentlyContinue
                 if (-not $props -or -not $props.ImagePath) { return $false }
+                if ($props.Start -eq 0 -or $props.Start -eq 1) { return $false }  # 0=Boot, 1=System - nunca mexe
                 $imgPath = $props.ImagePath.Trim()
                 if ($imgPath -match '^\\SystemRoot\\') { $imgPath = "$env:SystemRoot\$($imgPath.Substring(11))" }
                 elseif ($imgPath -match '^\\??\\') { $imgPath = $imgPath.Substring(4) }
@@ -421,18 +437,13 @@ function Get-RegistryScanCategories {
 
     $all = $safeCategories + $moderateCategories + $advancedCategories
 
-    $cfg = Get-RegistryScanConfig
-    if ($cfg.UseWinapp2) {
-        try {
-            $winapp2Rules = Import-Winapp2Rules
-            if ($winapp2Rules.Count -gt 0) {
-                Write-Host "  [INFO] Adicionando $($winapp2Rules.Count) regras Winapp2..." -ForegroundColor Cyan
-                foreach ($rule in $winapp2Rules) { $rule.Risk = "Segura"; $all += $rule }
-            }
-        } catch {
-            Write-Host "  [AVISO] Falha ao importar Winapp2: $_" -ForegroundColor Yellow
-        }
-    }
+    # DELIBERADO: regras do Winapp2 (comunidade, baixadas da internet, Check raso)
+    # NAO entram aqui, mesmo com UseWinapp2 ligado no config. Marca-las como
+    # "Segura" e miston-las no fluxo de scan/limpeza por risco e uma furada de
+    # seguranca - o usuario que escolhe "so categorias Seguras" espera as 7
+    # categorias curadas deste arquivo, nao regras de terceiros nao auditadas.
+    # O unico caminho para Winapp2 e Invoke-Winapp2Scan (Winapp2Parser.ps1),
+    # que e somente-relatorio e nunca remove nada automaticamente.
 
     switch ($RiskLevel) {
         "safe"     { return $safeCategories }
