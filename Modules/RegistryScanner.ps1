@@ -86,7 +86,7 @@ function Get-RegistryValueSize {
 
 function Get-RegistryKeySize {
     param([string]$KeyPath)
-    $total = 0
+    $total = 512
     try {
         $props = Get-ItemProperty -Path $KeyPath -ErrorAction SilentlyContinue
         if ($props) {
@@ -95,12 +95,8 @@ function Get-RegistryKeySize {
                 $total += Get-RegistryValueSize -KeyPath $KeyPath -ValueName $prop.Name
             }
         }
-        $subKeys = Get-ChildItem -Path $KeyPath -ErrorAction SilentlyContinue
-        foreach ($sub in $subKeys) {
-            $total += Get-RegistryKeySize -KeyPath $sub.PSPath
-        }
     } catch {}
-    return $total
+    return [Math]::Min(16384, $total)
 }
 
 $global:WMSSafeHives = @(
@@ -241,10 +237,7 @@ function Get-RegistryScanCategories {
             Name       = "CLSID/COM Órfãos"
             Risk       = "Moderada"
             Description = "Componentes COM cujo arquivo de implementação foi removido"
-            Hives      = @(
-                "HKLM:\SOFTWARE\Classes\CLSID",
-                "HKCR:\CLSID"
-            )
+            Hives      = @("HKLM:\SOFTWARE\Classes\CLSID")
             Check = {
                 param($key)
                 $props = Get-ItemProperty -Path $key.PSPath -ErrorAction SilentlyContinue
@@ -541,7 +534,15 @@ function Get-RegistryJunkReport {
                     $props = Get-ItemProperty -Path $hivePath -ErrorAction SilentlyContinue
                     if (-not $props) { continue }
                     $valueNames = $props.PSObject.Properties | Where-Object { $_.Name -notlike "PS*" }
+                    $vIdx = 0; $vTotal = @($valueNames).Count; $vLast = 0
                     foreach ($v in $valueNames) {
+                        $vIdx++
+                        if ($vIdx -gt $vLast + 100) {
+                            $vLast = $vIdx
+                            if (-not $Quiet) {
+                                Write-Progress -Activity "$($cat.Name)" -Status "Verificando valor $vIdx de $vTotal" -PercentComplete ([int]($vIdx * 100 / [Math]::Max(1, $vTotal)))
+                            }
+                        }
                         $checkTarget = if ($cat.ValueNameIsPath) { $v.Name } else { $v.Value }
                         if ([string]::IsNullOrWhiteSpace($checkTarget)) { continue }
                         try {
@@ -566,7 +567,17 @@ function Get-RegistryJunkReport {
             } else {
                 try {
                     $subKeys = Get-ChildItem -Path $hivePath -ErrorAction SilentlyContinue
+                    $keyIdx = 0
+                    $keyTotal = @($subKeys).Count
+                    $lastProgress = 0
                     foreach ($key in $subKeys) {
+                        $keyIdx++
+                        if ($keyIdx -gt $lastProgress + 50) {
+                            $lastProgress = $keyIdx
+                            if (-not $Quiet) {
+                                Write-Progress -Activity "$($cat.Name): $([System.IO.Path]::GetFileName($hivePath))" -Status "Verificando $keyIdx de $keyTotal" -PercentComplete ([int]($keyIdx * 100 / [Math]::Max(1, $keyTotal)))
+                            }
+                        }
                         try {
                             if (& $cat.Check $key) {
                                 $psPath = $key.PSPath -replace '^Microsoft\.PowerShell\.Core\\Registry::', ''
@@ -881,8 +892,6 @@ function Invoke-RegistryScan {
             default { $null }
         }
 
-        $measureSpace = $true
-
         if ($choice -in @("1", "2", "3")) {
             if ($choice -eq "3") {
                 Write-Host "`n[AVISO] Varredura Avançada inclui CLSID/COM, Serviços, TypeLibs." -ForegroundColor Yellow
@@ -890,7 +899,7 @@ function Invoke-RegistryScan {
                 $confirm = Read-Host "`nContinuar com varredura avançada? (S/N)"
                 if ($confirm -notmatch '^[Ss]') { continue }
             }
-            $findings = Get-RegistryJunkReport -RiskLevel $riskLevel -MeasureSpace
+            $findings = Get-RegistryJunkReport -RiskLevel $riskLevel
             Show-RegistryJunkReport -Findings $findings
 
             if ($findings.Count -gt 0) {
@@ -916,7 +925,7 @@ function Invoke-RegistryScan {
                 "3" { "advanced" }
                 default { "all" }
             }
-            $findings = Get-RegistryJunkReport -RiskLevel $scopeLevel -MeasureSpace
+            $findings = Get-RegistryJunkReport -RiskLevel $scopeLevel
             Show-RegistryJunkReport -Findings $findings
             if ($findings.Count -gt 0) {
                 $exportHtml = Read-Host "`nExportar relatório HTML? (S/N)"
@@ -938,7 +947,7 @@ function Invoke-RegistryScan {
                 "3" { "advanced" }
                 default { "all" }
             }
-            $findings = Get-RegistryJunkReport -RiskLevel $scopeLevel -MeasureSpace
+            $findings = Get-RegistryJunkReport -RiskLevel $scopeLevel
             Show-RegistryJunkReport -Findings $findings
 
             if ($findings.Count -gt 0) {
@@ -955,7 +964,7 @@ function Invoke-RegistryScan {
         }
 
         if ($choice -eq "6" -and $DryRun) {
-            $findings = Get-RegistryJunkReport -RiskLevel "all" -MeasureSpace
+            $findings = Get-RegistryJunkReport -RiskLevel "all"
             Write-Host "`n[DRY-RUN] Simulação de limpeza - nada será alterado." -ForegroundColor Yellow
             Clear-RegistryJunk -Findings $findings -DryRun
             continue
