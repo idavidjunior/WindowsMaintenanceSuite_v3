@@ -37,35 +37,45 @@ $moduleFiles = @(
     'RegistryBackupRestore.ps1','SystemTweaks.ps1','PerformanceMonitor.ps1','DeepCleaning.ps1',
     'SystemLightweight.ps1','DriverManager.ps1','SecurityScan.ps1','RegistryScanner.ps1',
     'QuickTools.ps1','SelfUpdate.ps1','PackageManager.ps1','Profiles.ps1','Hardening.ps1',
-    'DiskSpaceAnalyzer.ps1'
+    'DiskSpaceAnalyzer.ps1','MemoryManager.ps1','Winapp2Parser.ps1'
 )
 foreach ($mod in $moduleFiles) {
     Import-Module (Join-Path $modRoot $mod) -Force -DisableNameChecking
 }
 
-# VerificaÃ§Ã£o rÃ¡pida de carregamento
+# Verificacao rapida de carregamento
 if (-not (Get-Command Invoke-RegistryScan -ErrorAction SilentlyContinue)) {
-    Write-Error "Falha ao carregar o mÃ³dulo RegistryScanner (Invoke-RegistryScan nÃ£o encontrado)."
+    Write-Error "Falha ao carregar o modulo RegistryScanner (Invoke-RegistryScan nao encontrado)."
     pause
     exit 1
 }
 if (-not (Get-Command Update-WMS -ErrorAction SilentlyContinue)) {
-    Write-Error "Falha ao carregar o mÃ³dulo SelfUpdate (Update-WMS nÃ£o encontrado)."
+    Write-Error "Falha ao carregar o modulo SelfUpdate (Update-WMS nao encontrado)."
     pause
     exit 1
 }
 if (-not (Get-Command Install-App -ErrorAction SilentlyContinue)) {
-    Write-Error "Falha ao carregar o mÃ³dulo PackageManager (Install-App nÃ£o encontrado)."
+    Write-Error "Falha ao carregar o modulo PackageManager (Install-App nao encontrado)."
     pause
     exit 1
 }
 if (-not (Get-Command Set-WMSProfile -ErrorAction SilentlyContinue)) {
-    Write-Error "Falha ao carregar o mÃ³dulo Profiles (Set-WMSProfile nÃ£o encontrado)."
+    Write-Error "Falha ao carregar o modulo Profiles (Set-WMSProfile nao encontrado)."
     pause
     exit 1
 }
 if (-not (Get-Command Invoke-Hardening -ErrorAction SilentlyContinue)) {
-    Write-Error "Falha ao carregar o mÃ³dulo Hardening (Invoke-Hardening nÃ£o encontrado)."
+    Write-Error "Falha ao carregar o modulo Hardening (Invoke-Hardening nao encontrado)."
+    pause
+    exit 1
+}
+if (-not (Get-Command Invoke-MemoryManager -ErrorAction SilentlyContinue)) {
+    Write-Error "Falha ao carregar o modulo MemoryManager (Invoke-MemoryManager nao encontrado)."
+    pause
+    exit 1
+}
+if (-not (Get-Command Invoke-Winapp2Scan -ErrorAction SilentlyContinue)) {
+    Write-Error "Falha ao carregar o modulo Winapp2Parser (Invoke-Winapp2Scan nao encontrado)."
     pause
     exit 1
 }
@@ -103,7 +113,9 @@ function Show-MainMenu {
         Write-Host " 18. Gerenciador de Pacotes (WinGet/Choco/Scoop)"
         Write-Host " 19. Perfis de Otimizacao (Gamer/Dev/Server/Battery)"
         Write-Host " 20. Hardening de Seguranca (Baseline/Strict)"
-        Write-Host " 21. Sair"
+        Write-Host " 21. Gerenciador de Memoria RAM"
+        Write-Host " 22. Regras da Comunidade - Winapp2 (somente relatorio)"
+        Write-Host " 23. Sair"
         Write-Host "`n========================================" -ForegroundColor Green
 
         $choice = Read-Host "Digite o numero da sua escolha"
@@ -112,10 +124,10 @@ function Show-MainMenu {
         $choice = $choice -replace '\s+', ''
 
         # Validar input
-        $isValid = Test-ValidNumericInput -Value $choice -Min 1 -Max 21
+        $isValid = Test-ValidNumericInput -Value $choice -Min 1 -Max 23
 
         if (-not $isValid) {
-            Write-Host "Opção inválida. Por favor, digite um numero entre 1 e 21." -ForegroundColor Red
+            Write-Host "Opção inválida. Por favor, digite um numero entre 1 e 23." -ForegroundColor Red
             Start-Sleep -Seconds 2
             continue
         }
@@ -241,6 +253,15 @@ function Show-MainMenu {
                 Wait-KeyPress
             }
             "21" {
+                Write-Log "Abrindo Gerenciador de Memoria RAM."
+                Invoke-MemoryManager
+            }
+            "22" {
+                Write-Log "Abrindo varredura de regras da comunidade (Winapp2)."
+                Invoke-Winapp2Scan
+                Wait-KeyPress
+            }
+            "23" {
                 Write-Log "Saindo do Windows Maintenance Suite."
                 return
             }

@@ -91,3 +91,45 @@ function Import-Winapp2Rules {
 
 
 
+
+function Invoke-Winapp2Scan {
+    Write-Host "`n========================================" -ForegroundColor Cyan
+    Write-Host "  REGRAS DA COMUNIDADE (Winapp2.ini) - SOMENTE RELATORIO" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  [AVISO] Baixa Winapp2.ini de raw.githubusercontent.com (fonte externa, nao" -ForegroundColor Yellow
+    Write-Host "  curada por este projeto). Este modo so REPORTA quais chaves do seu registro" -ForegroundColor Yellow
+    Write-Host "  batem com regras da comunidade - nao apaga nada automaticamente." -ForegroundColor Yellow
+
+    $confirm = Read-Host "`nBaixar e escanear com as regras da comunidade agora? (S/N)"
+    if ($confirm -notmatch '^[Ss]') { return }
+
+    $rules = Import-Winapp2Rules
+    if (-not $rules -or $rules.Count -eq 0) {
+        Write-Host "      Nenhuma regra carregada." -ForegroundColor Yellow
+        return
+    }
+
+    $foundMatches = New-Object System.Collections.Generic.List[Object]
+    $i = 0
+    foreach ($rule in $rules) {
+        $i++
+        Write-Progress -Activity "Verificando regras da comunidade" -Status $rule.Name -PercentComplete ([int]($i / $rules.Count * 100))
+        foreach ($hive in $rule.Hives) {
+            if (Test-Path -Path $hive -ErrorAction SilentlyContinue) {
+                $foundMatches.Add([PSCustomObject]@{ Rule = $rule.Name; Path = $hive })
+            }
+        }
+    }
+    Write-Progress -Activity "Verificando regras da comunidade" -Completed
+
+    if ($foundMatches.Count -eq 0) {
+        Write-Host "`n      Nenhuma chave do seu registro bateu com regras da comunidade." -ForegroundColor Green
+        return
+    }
+
+    Write-Host "`n      $($foundMatches.Count) chave(s) batem com regras da comunidade (NAO removidas automaticamente):" -ForegroundColor Yellow
+    $foundMatches | Select-Object -First 30 | ForEach-Object { Write-Host "        [$($_.Rule)] $($_.Path)" -ForegroundColor White }
+    if ($foundMatches.Count -gt 30) { Write-Host "        ... e mais $($foundMatches.Count - 30)." -ForegroundColor DarkGray }
+    Write-Host "`n      Revise manualmente antes de remover qualquer uma. Este modulo e so informativo." -ForegroundColor Cyan
+    Write-Log "Winapp2 scan: $($foundMatches.Count) correspondencias encontradas (somente relatorio)." "INFO"
+}
